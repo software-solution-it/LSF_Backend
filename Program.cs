@@ -49,6 +49,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseSwagger();
+}
 
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 

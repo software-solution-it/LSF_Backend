@@ -44,15 +44,8 @@ builder.Services.AddScoped<ExcelService>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
-{
-    app.UseSwagger();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 

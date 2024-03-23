@@ -10,20 +10,12 @@ using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 var connection = builder.Configuration.GetConnectionString("ConectaSQL");
 builder.Services.AddDbContext<APIDbContext>(option => option.UseMySql(
     connection,
     ServerVersion.Parse("10.4.32-MariaDB")
     )
 );
-
-//Funcionando
-//builder.Services.AddIdentityApiEndpoints<User>()
-//    .AddRoles<IdentityRole>()
-//    .AddEntityFrameworkStores<APIDbContext>();
-//----------
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
@@ -34,12 +26,8 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     .AddDefaultTokenProviders()
     .AddApiEndpoints();
 
-//builder.Services.AddAuthentication()
-//    .AddBearerToken(IdentityConstants.BearerScheme);
-
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -50,33 +38,19 @@ builder.Services.AddAuthentication(options =>
 })
 .AddBearerToken("Identity.Bearer", options =>
 {
-    // Configurações do token Bearer para o esquema 'Identity.Bearer', se necessário
 });
 
 builder.Services.AddScoped<ExcelService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Obtenha uma instância de IServiceProvider para criar escopos de serviço
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-using (var scope = app.Services.CreateScope())
-{
-    var serviceProvider = scope.ServiceProvider;
-
-    // Obtenha uma instância de ExcelService dentro do escopo
-    var excelService = serviceProvider.GetRequiredService<ExcelService>();
-
-    // Atualiza o banco de dados com os dados da planilha Excel
-    excelService.AtualizarBancoDadosComPlanilhaExcelTecnicos(@"C:\Users\gatob\Desktop\Gabriel\LSF\Tecnicos.xlsx");
-    excelService.AtualizarBancoDadosComPlanilhaExcelProdutos(@"C:\Users\gatob\Desktop\Gabriel\LSF\Produtos.xlsx");
-}
 
 app.MapGroup("default").MapIdentityApi<User>();
 

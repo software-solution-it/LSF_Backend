@@ -109,44 +109,52 @@ namespace LSF.Controllers
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterCustom model)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
-            }
-
-            var newUser = new User
-            {
-                UserName = model.Email,
-                Email = model.Email
-            };
-
-            var result = await _userManager.CreateAsync(newUser, model.Password);
-
-            if (result.Succeeded)
-            {
-                var userId = await _userManager.GetUserIdAsync(newUser);
-                var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
-                code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-                var callbackUrl = Url.Action(action: "ConfirmEmail", controller: "User", values: new { userId = userId, code = code }, protocol: Request.Scheme);
-
-                var resultEmail = await SendEmailAsync(newUser.Email, "Confirm Email", $"PleaseConfirm <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'> clickHere </a>");
-
-                if (!resultEmail)
+                if (!ModelState.IsValid)
                 {
-                    await _userManager.DeleteAsync(newUser);
-                    return BadRequest("Falha ao enviar e-mail de confirmação. O usuário foi excluído.");
+                    return BadRequest(ModelState);
                 }
 
-                return Ok("Usuário registrado com sucesso.");
-            }
-            else
-            {
-                foreach (var error in result.Errors)
+                var newUser = new User
                 {
-                    ModelState.AddModelError("", error.Description);
+                    UserName = model.Email,
+                    Email = model.Email
+                };
+
+                var result = await _userManager.CreateAsync(newUser, model.Password);
+
+                if (result.Succeeded)
+                {
+                    var userId = await _userManager.GetUserIdAsync(newUser);
+                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
+                    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+                    var callbackUrl = Url.Action(action: "ConfirmEmail", controller: "User", values: new { userId = userId, code = code }, protocol: Request.Scheme);
+
+                    var resultEmail = await SendEmailAsync(newUser.Email, "Confirm Email", $"PleaseConfirm <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'> clickHere </a>");
+
+                    if (!resultEmail)
+                    {
+                        await _userManager.DeleteAsync(newUser);
+                        return BadRequest("Falha ao enviar e-mail de confirmação. O usuário foi excluído.");
+                    }
+
+                    return Ok("Usuário registrado com sucesso.");
                 }
-                return BadRequest(ModelState);
+                else
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError("", error.Description);
+                    }
+                    return BadRequest(ModelState);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Tratar a exceção aqui
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Ocorreu um erro durante o processamento da solicitação. {ex}");
             }
         }
 

@@ -180,7 +180,7 @@ namespace LSF.Controllers
         [HttpGet("GetById{id}")]
         public User Get(int id)
         {
-            return _dbContext.User.FirstOrDefault(t => t.Id == id.ToString());
+            return _dbContext.User.FirstOrDefault(t => t.Id == id);
         }
 
         // PUT api/<UserController>/5

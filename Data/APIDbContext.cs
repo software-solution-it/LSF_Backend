@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace LSF.Data
 {
-    public class APIDbContext : IdentityDbContext
+    public class APIDbContext : IdentityDbContext<User, IdentityRole<int>, int>
     {
         public APIDbContext(DbContextOptions<APIDbContext> options) : base(options)
         {

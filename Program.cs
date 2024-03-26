@@ -21,11 +21,11 @@ builder.Services.AddDbContext<APIDbContext>(option => option.UseMySql(
     )
 );
 
-builder.Services.AddIdentity<User, IdentityRole>(options =>
+builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 {
     options.SignIn.RequireConfirmedEmail = false;
 })
-    .AddRoles<IdentityRole>()
+    .AddRoles<IdentityRole<int>>()
     .AddEntityFrameworkStores<APIDbContext>()
     .AddDefaultTokenProviders()
     .AddApiEndpoints();
@@ -93,14 +93,14 @@ app.MapControllers();
 
 using(var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
 
     var roles = new[] { "Admin", "Manager", "User" };
 
     foreach(var role in roles)
     {
         if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
+            await roleManager.CreateAsync(new IdentityRole<int>(role));
     }
 }
 

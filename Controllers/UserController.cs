@@ -184,23 +184,27 @@ namespace LSF.Controllers
         }
 
         // PUT api/<UserController>/5
-        [HttpPut("Put{id}")]
-        public async Task<IActionResult> Put(string id, [FromBody] User user)
+        [HttpPut("Put/{id}")]
+        public async Task<IActionResult> Put(int id, [FromBody] User updatedUser)
         {
-            var userExistente = await _dbContext.Users.FindAsync(id);
-            if (userExistente == null)
+            var existingUser = await _dbContext.Users.FindAsync(id);
+            if (existingUser == null)
             {
-                return NotFound("Técnico não encontrado");
+                return NotFound("Usuário não encontrado");
             }
 
-            // Atualize apenas as propriedades que foram fornecidas
-            _dbContext.Entry(userExistente).CurrentValues.SetValues(user);
+            // Atualize as propriedades do usuário individualmente, exceto o Id
+            existingUser.UserName = updatedUser.UserName;
+            existingUser.Email = updatedUser.Email;
+            existingUser.UserImage = updatedUser.UserImage;
+            existingUser.Comprovante = updatedUser.Comprovante;
+            // Adicione outras propriedades conforme necessário
 
             // Salve as alterações no banco de dados
             await _dbContext.SaveChangesAsync();
 
             // Retorna uma resposta de sucesso com o usuário atualizado
-            return Ok(userExistente);
+            return Ok(existingUser);
         }
 
         // PUT api/<UserController>/5

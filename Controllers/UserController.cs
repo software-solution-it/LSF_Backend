@@ -193,26 +193,23 @@ namespace LSF.Controllers
                 return NotFound("Usuário não encontrado");
             }
 
-            // Atualize as propriedades do usuário individualmente, exceto o Id
             existingUser.UserName = updatedUser.UserName;
             existingUser.Email = updatedUser.Email;
+            existingUser.PhoneNumber = updatedUser.PhoneNumber;
             existingUser.UserImage = updatedUser.UserImage;
             existingUser.Comprovante = updatedUser.Comprovante;
-            // Adicione outras propriedades conforme necessário
 
-            // Salve as alterações no banco de dados
             await _dbContext.SaveChangesAsync();
 
-            // Retorna uma resposta de sucesso com o usuário atualizado
             return Ok(existingUser);
         }
 
         // PUT api/<UserController>/5
         [HttpPost("UpdateUserAndAddRole")]
-        public async Task<IActionResult> UpdateUserAndAddRole(string userId, string roleName)
+        public async Task<IActionResult> UpdateUserAndAddRole(int userId, string roleName)
         {
             // Busca o usuário pelo ID
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
             {
                 return NotFound("Usuário não encontrado");
@@ -243,7 +240,7 @@ namespace LSF.Controllers
 
         // DELETE api/<UserController>/5
         [HttpDelete("Delete{id}")]
-        public IActionResult Delete(string id)
+        public IActionResult Delete(int id)
         {
             // Verifica se o recurso com o ID fornecido existe
             var user = _dbContext.User.Find(id);

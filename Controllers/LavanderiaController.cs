@@ -40,7 +40,7 @@ namespace YourNamespace.Controllers
             return lavanderia;
         }
 
-        // POST: api/lavanderia
+
         [HttpPost]
         public async Task<ActionResult<Lavanderia>> Post(Lavanderia lavanderia)
         {
@@ -80,7 +80,6 @@ namespace YourNamespace.Controllers
             return NoContent();
         }
 
-        // DELETE: api/lavanderia/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

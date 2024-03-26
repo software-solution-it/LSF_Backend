@@ -1,19 +1,19 @@
 ﻿using LSF.Data;
 using LSF.Models;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
 using NuGet.Protocol.Plugins;
-using System.Net;
-using System.Net.Mail;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
+using System.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using IdentityModel.Client;
+using TokenResponse = LSF.Models.TokenResponse;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -25,209 +25,123 @@ namespace LSF.Controllers
     {
         private readonly APIDbContext _dbContext;
         private readonly UserManager<User> _userManager;
+        private readonly IEmailSender<User> _emailSender;
+        private readonly IConfiguration _config;
 
-        public UserController(APIDbContext dbContext, UserManager<User> userManager)
+        public UserController(APIDbContext dbContext, UserManager<User> userManager, IEmailSender<User> sender, IConfiguration config)
         {
             _dbContext = dbContext;
             _userManager = userManager;
+            _emailSender = sender;
+            _config = config;
         }
 
-        [HttpPost("Login")]
-        public async Task<IActionResult> Login(LoginRequest login)
+        [HttpPost("/login")]
+        public IActionResult Login(RegisterCustom model, [FromServices] IConfiguration _config)
         {
-            // Crie uma instância do HttpClient
-            using var client = new HttpClient();
-
-            try
+            if (model.Email != null && model.Password != null)
             {
-                // Defina a URL do outro endpoint que deseja chamar
-                var otherEndpointUrl = "https://api.faculdadedalavanderia.com.br/user/Login";
+                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+                var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-                // Serializar o objeto LoginRequest em uma string JSON
-                var jsonContent = JsonSerializer.Serialize(login);
-
-                // Crie uma instância de StringContent com a string JSON
-                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                // Envie uma requisição POST para o outro endpoint
-                var response = await client.PostAsync(otherEndpointUrl, content);
-
-                // Verifique se a resposta foi bem-sucedida
-                if (response.IsSuccessStatusCode)
+                var claims = new[]
                 {
-                    // Leia o conteúdo da resposta
-                    var responseBody = await response.Content.ReadAsStringAsync();
+            new Claim("username", model.Email),
+            new Claim("role", "User"),
+        };
 
-                    // Retorne a resposta recebida do outro endpoint
-                    return Ok(responseBody);
-                }
-                else
-                {
-                    // Se a resposta não foi bem-sucedida, retorne um problema com o status da resposta
-                    return Problem($"Failed to call other endpoint. Status: {response.StatusCode}");
-                }
+                var accessToken = new JwtSecurityToken(
+                    issuer: _config["Jwt:Issuer"],
+                    audience: _config["Jwt:Issuer"],
+                    claims: claims,
+                    expires: DateTime.Now.AddMinutes(120),
+                    signingCredentials: credentials
+                );
+
+                var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
+
+                var refreshToken = GenerateRefreshToken();
+
+                var tokenResponse = new TokenResponse(accessTokenString, refreshToken);
+
+
+                return Ok(tokenResponse);
             }
-            catch (Exception ex)
+            else
             {
-                // Se ocorrer uma exceção durante a chamada, retorne um problema com a mensagem de erro
-                return Problem($"An error occurred: {ex.Message}");
+                return Unauthorized();
             }
+
         }
 
-        [HttpGet("Hotmart")]
-        public async Task<IActionResult> Teste()
+        private string GenerateRefreshToken()
         {
-            var client = new HttpClient();
-
-            // Faça a solicitação para obter o token de acesso
-            var requestBody = "{}"; // Seu corpo da solicitação
-            var requestToken = new HttpRequestMessage
+            var randomNumber = new byte[32];
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
             {
-                Method = HttpMethod.Post,
-                RequestUri = new Uri("https://api-sec-vlc.hotmart.com/security/oauth/token?grant_type=client_credentials&client_id=dc18e069-9d41-4d03-9106-54149c9701ad&client_secret=d360b6a5-2dc4-414f-acd5-944471fa8f31"),
-                Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json")
-            };
-            requestToken.Headers.Add("Authorization", "Basic ZGMxOGUwNjktOWQ0MS00ZDAzLTkxMDYtNTQxNDljOTcwMWFkOmQzNjBiNmE1LTJkYzQtNDE0Zi1hY2Q1LTk0NDQ3MWZhOGYzMQ==");
-            var responseToken = await client.SendAsync(requestToken);
-            var responseBodyToken = await responseToken.Content.ReadAsStringAsync();
-            var accessToken = ""; // Extrair o token de acesso do responseBodyToken, dependendo do formato da resposta
-
-            // Faça a solicitação para obter informações sobre as assinaturas usando o token de acesso
-            var requestSubscriptions = new HttpRequestMessage
-            {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri("https://sandbox.hotmart.com/payments/api/v1/subscriptions"),
-            };
-            requestSubscriptions.Headers.Add("Authorization", $"Bearer {accessToken}");
-
-            var responseSubscriptions = await client.SendAsync(requestSubscriptions);
-            var responseBodySubscriptions = await responseSubscriptions.Content.ReadAsStringAsync();
-
-            return Ok(responseBodySubscriptions);
+                rng.GetBytes(randomNumber);
+                return Convert.ToBase64String(randomNumber);
+            }
         }
 
-        [HttpPost("Register")]
+        [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterCustom model)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var newUser = new User
-                {
-                    UserName = model.Email,
-                    Email = model.Email
-                };
-
-                var result = await _userManager.CreateAsync(newUser, model.Password);
-
-                if (result.Succeeded)
-                {
-                    var userId = await _userManager.GetUserIdAsync(newUser);
-                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
-                    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-                    var callbackUrl = Url.Action(action: "ConfirmEmail", controller: "User", values: new { userId = userId, code = code }, protocol: Request.Scheme);
-
-                    var resultEmail = await SendEmailAsync(newUser.Email, "Confirm Email", $"PleaseConfirm <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'> clickHere </a>");
-
-                    if (!resultEmail)
-                    {
-                        await _userManager.DeleteAsync(newUser);
-                        return BadRequest("Falha ao enviar e-mail de confirmação. O usuário foi excluído.");
-                    }
-
-                    return Ok("Usuário registrado com sucesso.");
-                }
-                else
-                {
-                    foreach (var error in result.Errors)
-                    {
-                        ModelState.AddModelError("", error.Description);
-                    }
-                    return BadRequest(ModelState);
-                }
+                return BadRequest(ModelState);
             }
-            catch (Exception ex)
+
+            var newUser = new User
             {
-                // Tratar a exceção aqui
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Ocorreu um erro durante o processamento da solicitação. {ex}");
+                UserName = model.Email,
+                Email = model.Email
+                // Pode adicionar mais propriedades conforme necessário
+            };
+
+            var result = await _userManager.CreateAsync(newUser, model.Password);
+
+            if (result.Succeeded)
+            {
+                return Ok("Usuário registrado com sucesso.");
+            }
+            else
+            {
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+                return BadRequest(ModelState);
             }
         }
 
-        private async Task<bool> SendEmailAsync(string email, string subject, string confirmLink)
+        [HttpGet]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
         {
-            try
+            if (userId == null || token == null)
             {
-                var mail = "gabrielsantos.new@gmail.com";
-                var pw = "wihzypxkrodiupnv";
-
-                MailMessage message = new MailMessage();
-                SmtpClient smtpClient = new SmtpClient();
-
-                message.From = new MailAddress(mail);
-                message.To.Add(email);
-                message.Subject = subject;
-                message.IsBodyHtml = true;
-                message.Body = confirmLink;
-
-                smtpClient.Port = 587; // Porta SMTP padrão para o Gmail
-                smtpClient.Host = "smtp.gmail.com"; // Host SMTP do Gmail
-
-                smtpClient.EnableSsl = true;
-                smtpClient.UseDefaultCredentials = false;
-                smtpClient.Credentials = new NetworkCredential(mail, pw); // Substitua com suas credenciais reais
-
-                smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
-
-                smtpClient.Send(message);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                BadRequest($"Ocorreu um erro ao enviar o e-mail: {ex.Message}");
-                return false;
-            }
-        }
-
-        [HttpGet("ConfirmEmail")]
-        public async Task<IActionResult> ConfirmEmail(string userId, string code)
-        {
-            if (userId == null || code == null)
-            {
-                // Se userId ou token forem nulos, retorne uma resposta de erro
-                return BadRequest("UserId and token must be provided.");
+                return BadRequest("Error");
             }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                // Se o usuário não for encontrado, retorne uma resposta de erro
-                return NotFound($"User with ID {userId} not found.");
+                return BadRequest("Error");
             }
 
-            // Decode o token
-            var decodedToken = WebEncoders.Base64UrlDecode(code);
-            var decodedTokenString = Encoding.UTF8.GetString(decodedToken);
-
-            // Confirme o e-mail do usuário
-            var result = await _userManager.ConfirmEmailAsync(user, decodedTokenString);
-            if (!result.Succeeded)
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
             {
-                // Se a confirmação falhar, retorne uma resposta de erro
-                return BadRequest("Email confirmation failed.");
+                return Ok("EmailConfirmed");
             }
-
-            // Se a confirmação for bem-sucedida, retorne uma resposta de sucesso
-            return Ok("Email confirmed successfully.");
+            else
+            {
+                return BadRequest("Error");
+            }
         }
 
-        // GET: api/<UserController>
-        [HttpGet("GetAll")]
+            // GET: api/<UserController>
+            [HttpGet("GetAll")]
         public IEnumerable<User> Get()
         {
             return _dbContext.User.ToList();
@@ -235,108 +149,23 @@ namespace LSF.Controllers
 
         // GET api/<UserController>/5
         [HttpGet("GetById{id}")]
-        public User Get(string id)
+        public User Get(int id)
         {
             return _dbContext.User.FirstOrDefault(t => t.Id == id.ToString());
         }
 
-        [HttpPost("UploadPdf/{userId}")]
-        public async Task<IActionResult> UploadPdf(string userId, IFormFile pdfFile)
+        [HttpGet("TesteUnknow")]
+        [AllowAnonymous]
+        public IActionResult TesteUnknow()
         {
-            // Verifica se o ID do usuário é válido
-            if (string.IsNullOrEmpty(userId))
-            {
-                return BadRequest("User ID is required.");
-            }
-
-            // Verifica se o arquivo PDF é válido
-            if (pdfFile == null || pdfFile.Length == 0)
-            {
-                return BadRequest("PDF file is required.");
-            }
-
-            // Busca o usuário pelo ID
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound($"User with ID {userId} not found.");
-            }
-
-            try
-            {
-                // Lê o arquivo PDF em bytes
-                using (var memoryStream = new MemoryStream())
-                {
-                    await pdfFile.CopyToAsync(memoryStream);
-                    user.Comprovante = memoryStream.ToArray();
-                }
-
-                // Atualiza o usuário com o arquivo PDF
-                var result = await _userManager.UpdateAsync(user);
-                if (!result.Succeeded)
-                {
-                    return StatusCode(500, $"Failed to update user with ID {userId}.");
-                }
-
-                return Ok("PDF uploaded successfully.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"An error occurred: {ex.Message}");
-            }
+            return Ok("Operação concluída com sucesso!");
         }
 
-
-        [HttpPost("UploadImage/{userId}")]
-        public async Task<IActionResult> UploadImage(string userId, IFormFile imageFile)
+        [HttpGet("TesteToken")]
+        [Authorize]
+        public IActionResult TesteToken()
         {
-            // Verifica se o ID do usuário é válido
-            if (string.IsNullOrEmpty(userId))
-            {
-                return BadRequest("User ID is required.");
-            }
-
-            // Verifica se o arquivo de imagem é válido
-            if (imageFile == null || imageFile.Length == 0)
-            {
-                return BadRequest("Image file is required.");
-            }
-
-            // Busca o usuário pelo ID
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound($"User with ID {userId} not found.");
-            }
-
-            try
-            {
-                // Verifica se o arquivo é uma imagem
-                if (!imageFile.ContentType.StartsWith("image"))
-                {
-                    return BadRequest("Only image files are allowed.");
-                }
-
-                // Lê a imagem em bytes
-                using (var memoryStream = new MemoryStream())
-                {
-                    await imageFile.CopyToAsync(memoryStream);
-                    user.UserImage = memoryStream.ToArray();
-                }
-
-                // Atualiza o usuário com a imagem
-                var result = await _userManager.UpdateAsync(user);
-                if (!result.Succeeded)
-                {
-                    return StatusCode(500, $"Failed to update user with ID {userId}.");
-                }
-
-                return Ok("Image uploaded successfully.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"An error occurred: {ex.Message}");
-            }
+            return Ok("Operação concluída com sucesso! TesteAdmin");
         }
 
         // PUT api/<UserController>/5

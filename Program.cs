@@ -104,5 +104,9 @@ using(var scope = app.Services.CreateScope())
     }
 }
 
+app.MapGroup("hotmart/purchase").MapGet("/", (Purchase purchase) =>
+{
+    return Results.Ok(purchase);
+});
 
 app.Run();

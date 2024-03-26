@@ -104,8 +104,9 @@ using(var scope = app.Services.CreateScope())
     }
 }
 
-app.MapGroup("hotmart/purchase").MapGet("/", (Purchase purchase) =>
+app.MapGroup("hotmart/purchase").MapPost("/", (Purchase purchase) =>
 {
+    // Use o objeto 'purchase' conforme necessário
     return Results.Ok(purchase);
 });
 

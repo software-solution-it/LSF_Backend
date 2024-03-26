@@ -14,7 +14,7 @@ namespace LSF.Data
 
         public DbSet<User> User { get; set; }
         public DbSet<Tecnicos> Tecnicos { get; set; }
-        public DbSet<Produtos> Produtos { get; set; }
+        public DbSet<Fornecedor> Fornecedor { get; set; }
         public DbSet<Geolocalizacao> Geolocalizacao { get; set; }
         public DbSet<Lavanderia> Lavanderia { get; set; }
         public DbSet<Empresa> Empresa { get; set; }

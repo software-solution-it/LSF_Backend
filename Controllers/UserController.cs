@@ -15,7 +15,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using IdentityModel.Client;
 using TokenResponse = LSF.Models.TokenResponse;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace LSF.Controllers
 {
@@ -36,7 +35,7 @@ namespace LSF.Controllers
             _config = config;
         }
 
-        [HttpPost("/login")]
+        [HttpPost("Login")]
         public IActionResult Login(RegisterCustom model, [FromServices] IConfiguration _config)
         {
             if (model.Email != null && model.Password != null)
@@ -84,7 +83,7 @@ namespace LSF.Controllers
             }
         }
 
-        [HttpPost("register")]
+        [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterCustom model)
         {
             if (!ModelState.IsValid)
@@ -96,7 +95,6 @@ namespace LSF.Controllers
             {
                 UserName = model.Email,
                 Email = model.Email
-                // Pode adicionar mais propriedades conforme necessário
             };
 
             var result = await _userManager.CreateAsync(newUser, model.Password);
@@ -140,8 +138,39 @@ namespace LSF.Controllers
             }
         }
 
-            // GET: api/<UserController>
-            [HttpGet("GetAll")]
+        [HttpGet("Hotmart")]
+        public async Task<IActionResult> Teste()
+        {
+            var client = new HttpClient();
+
+            // Faça a solicitação para obter o token de acesso
+            var requestBody = "{}"; // Seu corpo da solicitação
+            var requestToken = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri("https://api-sec-vlc.hotmart.com/security/oauth/token?grant_type=client_credentials&client_id=dc18e069-9d41-4d03-9106-54149c9701ad&client_secret=d360b6a5-2dc4-414f-acd5-944471fa8f31"),
+                Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json")
+            };
+            requestToken.Headers.Add("Authorization", "Basic ZGMxOGUwNjktOWQ0MS00ZDAzLTkxMDYtNTQxNDljOTcwMWFkOmQzNjBiNmE1LTJkYzQtNDE0Zi1hY2Q1LTk0NDQ3MWZhOGYzMQ==");
+            var responseToken = await client.SendAsync(requestToken);
+            var responseBodyToken = await responseToken.Content.ReadAsStringAsync();
+            var accessToken = ""; // Extrair o token de acesso do responseBodyToken, dependendo do formato da resposta
+
+            // Faça a solicitação para obter informações sobre as assinaturas usando o token de acesso
+            var requestSubscriptions = new HttpRequestMessage
+            {
+                Method = HttpMethod.Get,
+                RequestUri = new Uri("https://sandbox.hotmart.com/payments/api/v1/subscriptions"),
+            };
+            requestSubscriptions.Headers.Add("Authorization", $"Bearer {accessToken}");
+
+            var responseSubscriptions = await client.SendAsync(requestSubscriptions);
+            var responseBodySubscriptions = await responseSubscriptions.Content.ReadAsStringAsync();
+
+            return Ok(responseBodySubscriptions);
+        }
+
+        [HttpGet("GetAll")]
         public IEnumerable<User> Get()
         {
             return _dbContext.User.ToList();
@@ -152,20 +181,6 @@ namespace LSF.Controllers
         public User Get(int id)
         {
             return _dbContext.User.FirstOrDefault(t => t.Id == id.ToString());
-        }
-
-        [HttpGet("TesteUnknow")]
-        [AllowAnonymous]
-        public IActionResult TesteUnknow()
-        {
-            return Ok("Operação concluída com sucesso!");
-        }
-
-        [HttpGet("TesteToken")]
-        [Authorize]
-        public IActionResult TesteToken()
-        {
-            return Ok("Operação concluída com sucesso! TesteAdmin");
         }
 
         // PUT api/<UserController>/5

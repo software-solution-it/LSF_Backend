@@ -10,31 +10,31 @@ namespace LSF.Controllers
     [Authorize(AuthenticationSchemes = "Bearer")]
     [Route("api/[controller]")]
     [ApiController]
-    public class ProdutosController : ControllerBase
+    public class FornecedorController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
 
-        public ProdutosController(APIDbContext dbContext)
+        public FornecedorController(APIDbContext dbContext)
         {
             _dbContext = dbContext;
         }
 
         // GET: api/<ProdutosController>
         [HttpGet]
-        public IEnumerable<Produtos> Get()
+        public IEnumerable<Fornecedor> Get()
         {
-            return _dbContext.Produtos.ToList();
+            return _dbContext.Fornecedor.ToList();
         }
 
         // GET api/<ProdutosController>/5
         [HttpGet("{id}")]
-        public Produtos Get(int id)
+        public Fornecedor Get(int id)
         {
-            return _dbContext.Produtos.FirstOrDefault(t => t.Id == id);
+            return _dbContext.Fornecedor.FirstOrDefault(t => t.Id == id);
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostTecnico(Produtos tecnico)
+        public async Task<IActionResult> PostTecnico(Fornecedor tecnico)
         {
             if (tecnico == null)
             {
@@ -44,7 +44,7 @@ namespace LSF.Controllers
             try
             {
                 // Adicione o novo técnico ao contexto do banco de dados
-                _dbContext.Produtos.Add(tecnico);
+                _dbContext.Fornecedor.Add(tecnico);
                 await _dbContext.SaveChangesAsync(); // Salva as alterações no banco de dados
 
                 // Retorna uma resposta de sucesso com o técnico adicionado
@@ -60,9 +60,9 @@ namespace LSF.Controllers
 
         // PUT api/<ProdutosController>/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, Produtos tecnico)
+        public async Task<IActionResult> Put(int id, Fornecedor tecnico)
         {
-            var tecnicoExistente = await _dbContext.Produtos.FindAsync(id);
+            var tecnicoExistente = await _dbContext.Fornecedor.FindAsync(id);
             if (tecnicoExistente == null)
             {
                 return NotFound("Técnico não encontrado");
@@ -83,7 +83,7 @@ namespace LSF.Controllers
         public IActionResult Delete(int id)
         {
             // Verifica se o recurso com o ID fornecido existe
-            var tecnico = _dbContext.Produtos.Find(id);
+            var tecnico = _dbContext.Fornecedor.Find(id);
             if (tecnico == null)
             {
                 return NotFound("Técnico não encontrado");
@@ -92,7 +92,7 @@ namespace LSF.Controllers
             try
             {
                 // Remove o recurso do contexto do banco de dados
-                _dbContext.Produtos.Remove(tecnico);
+                _dbContext.Fornecedor.Remove(tecnico);
 
                 // Salva as alterações no banco de dados
                 _dbContext.SaveChanges();

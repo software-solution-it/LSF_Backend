@@ -10,56 +10,63 @@ namespace YourNamespace.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class EmpresaController : ControllerBase
+    public class GeolocalizacaoController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
 
-        public EmpresaController(APIDbContext dbContext)
+        public GeolocalizacaoController(APIDbContext dbContext)
         {
             _dbContext = dbContext;
         }
 
-        // GET: api/empresa
+        // GET: api/geolocalizacao
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Empresa>>> Get()
+        public async Task<ActionResult<IEnumerable<Geolocalizacao>>> Get()
         {
-            return await _dbContext.Empresa.ToListAsync();
+            return await _dbContext.Geolocalizacao.ToListAsync();
         }
 
-        // GET: api/empresa/5
+        // GET: api/geolocalizacao/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Empresa>> Get(int id)
+        public async Task<ActionResult<Geolocalizacao>> Get(int id)
         {
-            var empresa = await _dbContext.Empresa.FindAsync(id);
+            var geolocalizacao = await _dbContext.Geolocalizacao.FindAsync(id);
 
-            if (empresa == null)
+            if (geolocalizacao == null)
             {
                 return NotFound();
             }
 
-            return empresa;
+            return geolocalizacao;
         }
 
-        // POST: api/empresa
+        // POST: api/geolocalizacao
         [HttpPost]
-        public async Task<ActionResult<Empresa>> Post(Empresa empresa)
+        public async Task<ActionResult<Geolocalizacao>> Post(string altitude, string longitude)
         {
-            _dbContext.Empresa.Add(empresa);
+
+            var newGeo = new Geolocalizacao()
+            {
+                Altitude = altitude,
+                Longitude = longitude
+            };
+
+            _dbContext.Geolocalizacao.Add(newGeo);
             await _dbContext.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(Get), new { id = empresa.Id }, empresa);
+            return CreatedAtAction(nameof(Get), new { id = newGeo.Id }, newGeo);
         }
 
-        // PUT: api/empresa/5
+        // PUT: api/geolocalizacao/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, Empresa empresa)
+        public async Task<IActionResult> Put(int id, Geolocalizacao geolocalizacao)
         {
-            if (id != empresa.Id)
+            if (id != geolocalizacao.Id)
             {
                 return BadRequest();
             }
 
-            _dbContext.Entry(empresa).State = EntityState.Modified;
+            _dbContext.Entry(geolocalizacao).State = EntityState.Modified;
 
             try
             {
@@ -67,7 +74,7 @@ namespace YourNamespace.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!EmpresaExists(id))
+                if (!GeolocalizacaoExists(id))
                 {
                     return NotFound();
                 }
@@ -80,25 +87,25 @@ namespace YourNamespace.Controllers
             return NoContent();
         }
 
-        // DELETE: api/empresa/5
+        // DELETE: api/geolocalizacao/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var empresa = await _dbContext.Empresa.FindAsync(id);
-            if (empresa == null)
+            var geolocalizacao = await _dbContext.Geolocalizacao.FindAsync(id);
+            if (geolocalizacao == null)
             {
                 return NotFound();
             }
 
-            _dbContext.Empresa.Remove(empresa);
+            _dbContext.Geolocalizacao.Remove(geolocalizacao);
             await _dbContext.SaveChangesAsync();
 
             return NoContent();
         }
 
-        private bool EmpresaExists(int id)
+        private bool GeolocalizacaoExists(int id)
         {
-            return _dbContext.Empresa.Any(e => e.Id == id);
+            return _dbContext.Geolocalizacao.Any(g => g.Id == id);
         }
     }
 }

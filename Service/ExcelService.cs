@@ -95,14 +95,14 @@ public class ExcelService
                 string tel = worksheet.Cells[linha, 5].Value?.ToString(); // Supondo que o nome está na segunda coluna
               
                 // Procurar o registro no banco de dados
-                var produto = _dbContext.Produtos.FirstOrDefault(t => t.Id == id);
+                var produto = _dbContext.Fornecedor.FirstOrDefault(t => t.Id == id);
 
                 // Se o técnico não existir, pode ser criado, se necessário
 
                 // Atualizar os dados do técnico, se necessário
                 if (produto == null)
                 {
-                    produto = new Produtos
+                    produto = new Fornecedor
                     {
                         Id = id,
                         Cidade = cidade ?? "",
@@ -113,7 +113,7 @@ public class ExcelService
                         // Defina outras propriedades conforme necessário
                     };
 
-                    _dbContext.Produtos.Add(produto);
+                    _dbContext.Fornecedor.Add(produto);
                 }
                 else
                 {

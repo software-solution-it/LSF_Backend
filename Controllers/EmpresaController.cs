@@ -10,56 +10,56 @@ namespace YourNamespace.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class GeolocalizacaoController : ControllerBase
+    public class EmpresaController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
 
-        public GeolocalizacaoController(APIDbContext dbContext)
+        public EmpresaController(APIDbContext dbContext)
         {
             _dbContext = dbContext;
         }
 
-        // GET: api/geolocalizacao
+        // GET: api/empresa
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Geolocalizacao>>> Get()
+        public async Task<ActionResult<IEnumerable<Empresa>>> Get()
         {
-            return await _dbContext.Geolocalizacao.ToListAsync();
+            return await _dbContext.Empresa.ToListAsync();
         }
 
-        // GET: api/geolocalizacao/5
+        // GET: api/empresa/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Geolocalizacao>> Get(int id)
+        public async Task<ActionResult<Empresa>> Get(int id)
         {
-            var geolocalizacao = await _dbContext.Geolocalizacao.FindAsync(id);
+            var empresa = await _dbContext.Empresa.FindAsync(id);
 
-            if (geolocalizacao == null)
+            if (empresa == null)
             {
                 return NotFound();
             }
 
-            return geolocalizacao;
+            return empresa;
         }
 
-        // POST: api/geolocalizacao
+        // POST: api/empresa
         [HttpPost]
-        public async Task<ActionResult<Geolocalizacao>> Post(Geolocalizacao geolocalizacao)
+        public async Task<ActionResult<Empresa>> Post(Empresa empresa)
         {
-            _dbContext.Geolocalizacao.Add(geolocalizacao);
+            _dbContext.Empresa.Add(empresa);
             await _dbContext.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(Get), new { id = geolocalizacao.Id }, geolocalizacao);
+            return CreatedAtAction(nameof(Get), new { id = empresa.Id }, empresa);
         }
 
-        // PUT: api/geolocalizacao/5
+        // PUT: api/empresa/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, Geolocalizacao geolocalizacao)
+        public async Task<IActionResult> Put(int id, Empresa empresa)
         {
-            if (id != geolocalizacao.Id)
+            if (id != empresa.Id)
             {
                 return BadRequest();
             }
 
-            _dbContext.Entry(geolocalizacao).State = EntityState.Modified;
+            _dbContext.Entry(empresa).State = EntityState.Modified;
 
             try
             {
@@ -67,7 +67,7 @@ namespace YourNamespace.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!GeolocalizacaoExists(id))
+                if (!EmpresaExists(id))
                 {
                     return NotFound();
                 }
@@ -80,25 +80,25 @@ namespace YourNamespace.Controllers
             return NoContent();
         }
 
-        // DELETE: api/geolocalizacao/5
+        // DELETE: api/empresa/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var geolocalizacao = await _dbContext.Geolocalizacao.FindAsync(id);
-            if (geolocalizacao == null)
+            var empresa = await _dbContext.Empresa.FindAsync(id);
+            if (empresa == null)
             {
                 return NotFound();
             }
 
-            _dbContext.Geolocalizacao.Remove(geolocalizacao);
+            _dbContext.Empresa.Remove(empresa);
             await _dbContext.SaveChangesAsync();
 
             return NoContent();
         }
 
-        private bool GeolocalizacaoExists(int id)
+        private bool EmpresaExists(int id)
         {
-            return _dbContext.Geolocalizacao.Any(g => g.Id == id);
+            return _dbContext.Empresa.Any(e => e.Id == id);
         }
     }
 }

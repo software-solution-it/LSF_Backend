@@ -2,7 +2,7 @@
 
 namespace LSF.Models
 {
-    public class Produtos
+    public class Fornecedor
     {
         public required int Id { get; set; }
         public required string Cidade { get; set; }

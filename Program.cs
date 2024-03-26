@@ -104,10 +104,4 @@ using(var scope = app.Services.CreateScope())
     }
 }
 
-app.MapGroup("hotmart/purchase").MapPost("/", (Purchase purchase) =>
-{
-    // Use o objeto 'purchase' conforme necessário
-    return Results.Ok(purchase);
-});
-
 app.Run();

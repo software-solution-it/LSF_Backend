@@ -15,17 +15,10 @@ namespace LSF.Controllers
             return Ok(objeto);
         }
 
-        // GET api/<Hotmart>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpPost("/hotmart/purchase")]
+        public IActionResult PostPurchase([FromBody] Purchase purchase)
         {
-            return "value";
-        }
-
-        // POST api/<Hotmart>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
+            return Ok(purchase);
         }
 
         // PUT api/<Hotmart>/5

@@ -238,6 +238,105 @@ namespace LSF.Controllers
             return Ok("Usuário atualizado e role adicionada com sucesso");
         }
 
+        [HttpPost("UploadPdf/{userId}")]
+        public async Task<IActionResult> UploadPdf(string userId, IFormFile pdfFile)
+        {
+            // Verifica se o ID do usuário é válido
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID is required.");
+            }
+
+            // Verifica se o arquivo PDF é válido
+            if (pdfFile == null || pdfFile.Length == 0)
+            {
+                return BadRequest("PDF file is required.");
+            }
+
+            // Busca o usuário pelo ID
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound($"User with ID {userId} not found.");
+            }
+
+            try
+            {
+                // Lê o arquivo PDF em bytes
+                using (var memoryStream = new MemoryStream())
+                {
+                    await pdfFile.CopyToAsync(memoryStream);
+                    user.Comprovante = memoryStream.ToArray();
+                }
+
+                // Atualiza o usuário com o arquivo PDF
+                var result = await _userManager.UpdateAsync(user);
+                if (!result.Succeeded)
+                {
+                    return StatusCode(500, $"Failed to update user with ID {userId}.");
+                }
+
+                return Ok("PDF uploaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+        }
+
+
+        [HttpPost("UploadImage/{userId}")]
+        public async Task<IActionResult> UploadImage(string userId, IFormFile imageFile)
+        {
+            // Verifica se o ID do usuário é válido
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("User ID is required.");
+            }
+
+            // Verifica se o arquivo de imagem é válido
+            if (imageFile == null || imageFile.Length == 0)
+            {
+                return BadRequest("Image file is required.");
+            }
+
+            // Busca o usuário pelo ID
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound($"User with ID {userId} not found.");
+            }
+
+            try
+            {
+                // Verifica se o arquivo é uma imagem
+                if (!imageFile.ContentType.StartsWith("image"))
+                {
+                    return BadRequest("Only image files are allowed.");
+                }
+
+                // Lê a imagem em bytes
+                using (var memoryStream = new MemoryStream())
+                {
+                    await imageFile.CopyToAsync(memoryStream);
+                    user.UserImage = memoryStream.ToArray();
+                }
+
+                // Atualiza o usuário com a imagem
+                var result = await _userManager.UpdateAsync(user);
+                if (!result.Succeeded)
+                {
+                    return StatusCode(500, $"Failed to update user with ID {userId}.");
+                }
+
+                return Ok("Image uploaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+        }
+
         // DELETE api/<UserController>/5
         [HttpDelete("Delete{id}")]
         public IActionResult Delete(int id)

@@ -266,10 +266,11 @@ namespace LSF.Controllers
                 using (var memoryStream = new MemoryStream())
                 {
                     await pdfFile.CopyToAsync(memoryStream);
+                    // Atualiza apenas o PDF do usuário
                     user.Comprovante = memoryStream.ToArray();
                 }
 
-                // Atualiza o usuário com o arquivo PDF
+                // Atualiza o usuário com o novo PDF
                 var result = await _userManager.UpdateAsync(user);
                 if (!result.Succeeded)
                 {

@@ -14,6 +14,9 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using IdentityModel.Client;
 using TokenResponse = LSF.Models.TokenResponse;
+using System.Net.Mail;
+using System.Net;
+using System.Text.Encodings.Web;
 
 
 namespace LSF.Controllers
@@ -26,51 +29,71 @@ namespace LSF.Controllers
         private readonly UserManager<User> _userManager;
         private readonly IEmailSender<User> _emailSender;
         private readonly IConfiguration _config;
+        private readonly SignInManager<User> _signInManager;
 
-        public UserController(APIDbContext dbContext, UserManager<User> userManager, IEmailSender<User> sender, IConfiguration config)
+        public UserController(APIDbContext dbContext, UserManager<User> userManager, IEmailSender<User> sender, IConfiguration config, SignInManager<User> signInManager)
         {
             _dbContext = dbContext;
             _userManager = userManager;
             _emailSender = sender;
             _config = config;
+            _signInManager = signInManager;
         }
 
         [HttpPost("Login")]
-        public IActionResult Login(RegisterCustom model, [FromServices] IConfiguration _config)
+        public async Task<IActionResult> Login(RegisterCustom model)
         {
-            if (model.Email != null && model.Password != null)
+            if (!ModelState.IsValid)
             {
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-                var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-                var claims = new[]
-                {
-            new Claim("username", model.Email),
-            new Claim("role", "User"),
-        };
-
-                var accessToken = new JwtSecurityToken(
-                    issuer: _config["Jwt:Issuer"],
-                    audience: _config["Jwt:Issuer"],
-                    claims: claims,
-                    expires: DateTime.Now.AddMinutes(120),
-                    signingCredentials: credentials
-                );
-
-                var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
-
-                var refreshToken = GenerateRefreshToken();
-
-                var tokenResponse = new TokenResponse(accessTokenString, refreshToken);
-
-
-                return Ok(tokenResponse);
+                return BadRequest(ModelState);
             }
-            else
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
             {
+                // Usuário não encontrado, retornar Unauthorized
                 return Unauthorized();
             }
 
+            // Tentar fazer login com as credenciais fornecidas
+            var result = await _signInManager.PasswordSignInAsync(user, model.Password, false, false);
+            if (!result.Succeeded)
+            {
+                // Credenciais inválidas, retornar Unauthorized
+                return Unauthorized();
+            }
+
+            // Crie e configure a chave de segurança
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            // Crie as reivindicações (claims) para o token JWT
+            var claims = new[]
+            {
+            new Claim("username", user.Email),
+            new Claim("role", "User"),
+        };
+
+            // Crie e configure o token JWT
+            var accessToken = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Issuer"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(120),
+                signingCredentials: credentials
+            );
+
+            // Escreva o token JWT como uma string
+            var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
+
+            // Gere um token de atualização (refresh token)
+            var refreshToken = GenerateRefreshToken();
+
+            // Crie a resposta contendo o token de acesso e o token de atualização
+            var tokenResponse = new TokenResponse(accessTokenString, refreshToken);
+
+            // Retorne um Ok com a resposta contendo os tokens
+            return Ok(tokenResponse);
         }
 
         private string GenerateRefreshToken()
@@ -86,60 +109,125 @@ namespace LSF.Controllers
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterCustom model)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
-            }
-
-            var newUser = new User
-            {
-                UserName = model.Email,
-                Email = model.Email
-            };
-
-            var result = await _userManager.CreateAsync(newUser, model.Password);
-
-            if (result.Succeeded)
-            {
-                return Ok("Usuário registrado com sucesso.");
-            }
-            else
-            {
-                foreach (var error in result.Errors)
+                if (!ModelState.IsValid)
                 {
-                    ModelState.AddModelError("", error.Description);
+                    return BadRequest(ModelState);
                 }
-                return BadRequest(ModelState);
+
+                var newUser = new User
+                {
+                    UserName = model.Email,
+                    Email = model.Email
+                };
+
+                var result = await _userManager.CreateAsync(newUser, model.Password);
+
+                if (result.Succeeded)
+                {
+                    var userId = await _userManager.GetUserIdAsync(newUser);
+                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
+                    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+                    var callbackUrl = Url.Action(action: "ConfirmEmail", controller: "User", values: new { userId = userId, code = code }, protocol: Request.Scheme);
+
+                    var resultEmail = await SendEmailAsync(newUser.Email, "Confirm Email", $"PleaseConfirm <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'> clickHere </a>");
+
+                    if (!resultEmail)
+                    {
+                        await _userManager.DeleteAsync(newUser);
+                        return BadRequest("Falha ao enviar e-mail de confirmação. O usuário foi excluído.");
+                    }
+
+                    return Ok("Usuário registrado com sucesso.");
+                }
+                else
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError("", error.Description);
+                    }
+                    return BadRequest(ModelState);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Tratar a exceção aqui
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Ocorreu um erro durante o processamento da solicitação. {ex}");
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        private async Task<bool> SendEmailAsync(string email, string subject, string confirmLink)
         {
-            if (userId == null || token == null)
+            try
             {
-                return BadRequest("Error");
+                var mail = "contato@lavanderiasemfranquia.com";
+                var pw = "App#LSF2024";
+
+                MailMessage message = new MailMessage();
+                SmtpClient smtpClient = new SmtpClient();
+
+                message.From = new MailAddress(mail);
+                message.To.Add(email);
+                message.Subject = subject;
+                message.IsBodyHtml = true;
+                message.Body = confirmLink;
+
+                smtpClient.Port = 465; // Porta SMTP padrão para o Gmail
+                smtpClient.Host = "smtp.lavanderiasemfranquia.com"; // Host SMTP do Gmail
+
+                smtpClient.EnableSsl = true;
+                smtpClient.UseDefaultCredentials = false;
+                smtpClient.Credentials = new NetworkCredential(mail, pw); // Substitua com suas credenciais reais
+
+                smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
+
+                smtpClient.Send(message);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                BadRequest($"Ocorreu um erro ao enviar o e-mail: {ex.Message}");
+                return false;
+            }
+        }
+
+        [HttpGet("ConfirmEmail")]
+        public async Task<IActionResult> ConfirmEmail(string userId, string code)
+        {
+            if (userId == null || code == null)
+            {
+                // Se userId ou token forem nulos, retorne uma resposta de erro
+                return BadRequest("UserId and token must be provided.");
             }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                return BadRequest("Error");
+                // Se o usuário não for encontrado, retorne uma resposta de erro
+                return NotFound($"User with ID {userId} not found.");
             }
 
-            var result = await _userManager.ConfirmEmailAsync(user, token);
-            if (result.Succeeded)
+            // Decode o token
+            var decodedToken = WebEncoders.Base64UrlDecode(code);
+            var decodedTokenString = Encoding.UTF8.GetString(decodedToken);
+
+            // Confirme o e-mail do usuário
+            var result = await _userManager.ConfirmEmailAsync(user, decodedTokenString);
+            if (!result.Succeeded)
             {
-                return Ok("EmailConfirmed");
+                // Se a confirmação falhar, retorne uma resposta de erro
+                return BadRequest("Email confirmation failed.");
             }
-            else
-            {
-                return BadRequest("Error");
-            }
+
+            // Se a confirmação for bem-sucedida, retorne uma resposta de sucesso
+            return Ok("Email confirmed successfully.");
         }
 
         [HttpGet("Hotmart")]
-        public async Task<IActionResult> Teste()
+        public async Task<IActionResult> Hotmart()
         {
             var client = new HttpClient();
 

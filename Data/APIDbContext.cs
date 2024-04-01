@@ -5,23 +5,26 @@ using Microsoft.AspNetCore.Identity;
 
 namespace LSF.Data
 {
-    public class APIDbContext : IdentityDbContext<User, IdentityRole<int>, int>
+    public class APIDbContext : DbContext
     {
         public APIDbContext(DbContextOptions<APIDbContext> options) : base(options)
         {
 
         }
 
-        public DbSet<User> User { get; set; }
-        public DbSet<Tecnicos> Tecnicos { get; set; }
-        public DbSet<Fornecedor> Fornecedor { get; set; }
-        public DbSet<Geolocalizacao> Geolocalizacao { get; set; }
-        public DbSet<Lavanderia> Lavanderia { get; set; }
-        public DbSet<Empresa> Empresa { get; set; }
-        public DbSet<Maquina> Maquina { get; set; }
-        public DbSet<MaquinaLavar> MaquinaLavar { get; set; }
-        public DbSet<Marca> Marca { get; set; }
-        public DbSet<MarcaEmpresa> MarcaEmpresa { get; set; }
-        public DbSet<Municipio> Municipio { get; set; }
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseLazyLoadingProxies();
+        }
+
+        public DbSet<User> AspNetUsers { get; set; }
+        public DbSet<Geolocation> Geolocation { get; set; }
+        public DbSet<Point> Point { get; set; }
+        public DbSet<Supplier> Supplier { get; set; }
+        public DbSet<Technician> Technician { get; set; }
+        public DbSet<UserGeolocation> User_Geolocation { get; set; }
+        public DbSet<UserPoint> User_Point { get; set; }
+        public DbSet<UserSupplier> User_Supplier { get; set; }
+        public DbSet<UserTechnician> User_Technician { get; set; }
     }
 }

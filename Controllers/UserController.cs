@@ -1,7 +1,6 @@
 ﻿using LSF.Data;
 using LSF.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using NuGet.Protocol.Plugins;
@@ -17,6 +16,7 @@ using TokenResponse = LSF.Models.TokenResponse;
 using System.Net.Mail;
 using System.Net;
 using System.Text.Encodings.Web;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace LSF.Controllers
@@ -26,40 +26,31 @@ namespace LSF.Controllers
     public class UserController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
-        private readonly UserManager<User> _userManager;
-        private readonly IEmailSender<User> _emailSender;
         private readonly IConfiguration _config;
-        private readonly SignInManager<User> _signInManager;
 
-        public UserController(APIDbContext dbContext, UserManager<User> userManager, IEmailSender<User> sender, IConfiguration config, SignInManager<User> signInManager)
+        public UserController(APIDbContext dbContext, IConfiguration config)
         {
             _dbContext = dbContext;
-            _userManager = userManager;
-            _emailSender = sender;
             _config = config;
-            _signInManager = signInManager;
         }
 
         [HttpPost("Login")]
-        public async Task<IActionResult> Login(RegisterCustom model)
+        public async Task<IActionResult> Login(UserModelRegister model)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var user = await _userManager.FindByEmailAsync(model.Email);
+            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(u => u.Email == model.Email);
             if (user == null)
             {
-                // Usuário não encontrado, retornar Unauthorized
                 return Unauthorized();
             }
 
-            // Tentar fazer login com as credenciais fornecidas
-            var result = await _signInManager.PasswordSignInAsync(user, model.Password, false, false);
-            if (!result.Succeeded)
+            if (!VerifyPassword(user, model.Password))
             {
-                // Credenciais inválidas, retornar Unauthorized
+                // Senha incorreta, retornar Unauthorized
                 return Unauthorized();
             }
 
@@ -70,11 +61,10 @@ namespace LSF.Controllers
             // Crie as reivindicações (claims) para o token JWT
             var claims = new[]
             {
-            new Claim("username", user.Email),
-            new Claim("role", "User"),
-        };
+                new Claim("username", user.Email),
+                new Claim("role", "User"),
+            };
 
-            // Crie e configure o token JWT
             var accessToken = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Issuer"],
@@ -96,6 +86,27 @@ namespace LSF.Controllers
             return Ok(tokenResponse);
         }
 
+        private bool VerifyPassword(User user, string password)
+        {
+            // Aqui você deve implementar a lógica para verificar se a senha fornecida corresponde à senha armazenada no banco de dados.
+            // Por exemplo, você pode comparar o hash da senha fornecida com o hash de senha armazenado no banco de dados.
+            // Não esqueça de considerar as técnicas de segurança adequadas, como o uso de funções de hash seguras (por exemplo, BCrypt, PBKDF2).
+            // Este método é apenas um esboço e você precisa implementá-lo de acordo com suas necessidades.
+            // Aqui está um exemplo simplificado:
+
+            return user.Password == HashPassword(password);
+        }
+
+        private string HashPassword(string password)
+        {
+            // Aqui você deve implementar a lógica para criar um hash seguro da senha fornecida.
+            // Por razões de segurança, é altamente recomendável usar uma biblioteca de hash de senha robusta, como BCrypt ou PBKDF2.
+            // Este método é apenas um esboço e você precisa implementá-lo de acordo com suas necessidades.
+            // Aqui está um exemplo simplificado:
+
+            return password; // Exemplo: esta implementação simplesmente retorna a senha não hashada, o que não é seguro em produção.
+        }
+
         private string GenerateRefreshToken()
         {
             var randomNumber = new byte[32];
@@ -107,7 +118,7 @@ namespace LSF.Controllers
         }
 
         [HttpPost("Register")]
-        public async Task<IActionResult> Register([FromBody] RegisterCustom model)
+        public async Task<IActionResult> Register(UserModelRegister model)
         {
             try
             {
@@ -118,38 +129,42 @@ namespace LSF.Controllers
 
                 var newUser = new User
                 {
-                    UserName = model.Email,
-                    Email = model.Email
+                    Email = model.Email,
+                    Password = model.Password,
                 };
 
-                var result = await _userManager.CreateAsync(newUser, model.Password);
+                var result = await _dbContext.AspNetUsers.AddAsync(newUser);
 
-                if (result.Succeeded)
-                {
-                    var userId = await _userManager.GetUserIdAsync(newUser);
-                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
-                    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+                await _dbContext.SaveChangesAsync();
 
-                    var callbackUrl = Url.Action(action: "ConfirmEmail", controller: "User", values: new { userId = userId, code = code }, protocol: Request.Scheme);
+                return Ok("Usuário registrado com sucesso.");
 
-                    var resultEmail = await SendEmailAsync(newUser.Email, "Confirm Email", $"PleaseConfirm <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'> clickHere </a>");
+                //if (result)
+                //{
+                //    var userId = await _dbContext.GetUserIdAsync(newUser);
+                //    var code = await _dbContext.GenerateEmailConfirmationTokenAsync(newUser);
+                //    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-                    if (!resultEmail)
-                    {
-                        await _userManager.DeleteAsync(newUser);
-                        return BadRequest("Falha ao enviar e-mail de confirmação. O usuário foi excluído.");
-                    }
+                //    var callbackUrl = Url.Action(action: "ConfirmEmail", controller: "User", values: new { userId = userId, code = code }, protocol: Request.Scheme);
 
-                    return Ok("Usuário registrado com sucesso.");
-                }
-                else
-                {
-                    foreach (var error in result.Errors)
-                    {
-                        ModelState.AddModelError("", error.Description);
-                    }
-                    return BadRequest(ModelState);
-                }
+                //    var resultEmail = await SendEmailAsync(newUser.Email, "Confirm Email", $"PleaseConfirm <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'> clickHere </a>");
+
+                //    if (!resultEmail)
+                //    {
+                //        await _dbContext.DeleteAsync(newUser);
+                //        return BadRequest("Falha ao enviar e-mail de confirmação. O usuário foi excluído.");
+                //    }
+
+                //    return Ok("Usuário registrado com sucesso.");
+                //}
+                //else
+                //{
+                //    foreach (var error in result.Errors)
+                //    {
+                //        ModelState.AddModelError("", error.Description);
+                //    }
+                //    return BadRequest(ModelState);
+                //}
             }
             catch (Exception ex)
             {
@@ -194,37 +209,37 @@ namespace LSF.Controllers
             }
         }
 
-        [HttpGet("ConfirmEmail")]
-        public async Task<IActionResult> ConfirmEmail(string userId, string code)
-        {
-            if (userId == null || code == null)
-            {
-                // Se userId ou token forem nulos, retorne uma resposta de erro
-                return BadRequest("UserId and token must be provided.");
-            }
+        //[HttpGet("ConfirmEmail")]
+        //public async Task<IActionResult> ConfirmEmail(string userId, string code)
+        //{
+        //    if (userId == null || code == null)
+        //    {
+        //        // Se userId ou token forem nulos, retorne uma resposta de erro
+        //        return BadRequest("UserId and token must be provided.");
+        //    }
 
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                // Se o usuário não for encontrado, retorne uma resposta de erro
-                return NotFound($"User with ID {userId} not found.");
-            }
+        //    var user = await _dbContext.FirstOr(userId);
+        //    if (user == null)
+        //    {
+        //        // Se o usuário não for encontrado, retorne uma resposta de erro
+        //        return NotFound($"User with ID {userId} not found.");
+        //    }
 
-            // Decode o token
-            var decodedToken = WebEncoders.Base64UrlDecode(code);
-            var decodedTokenString = Encoding.UTF8.GetString(decodedToken);
+        //    // Decode o token
+        //    var decodedToken = WebEncoders.Base64UrlDecode(code);
+        //    var decodedTokenString = Encoding.UTF8.GetString(decodedToken);
 
-            // Confirme o e-mail do usuário
-            var result = await _userManager.ConfirmEmailAsync(user, decodedTokenString);
-            if (!result.Succeeded)
-            {
-                // Se a confirmação falhar, retorne uma resposta de erro
-                return BadRequest("Email confirmation failed.");
-            }
+        //    // Confirme o e-mail do usuário
+        //    var result = await _dbContext.ConfirmEmailAsync(user, decodedTokenString);
+        //    if (!result.Succeeded)
+        //    {
+        //        // Se a confirmação falhar, retorne uma resposta de erro
+        //        return BadRequest("Email confirmation failed.");
+        //    }
 
-            // Se a confirmação for bem-sucedida, retorne uma resposta de sucesso
-            return Ok("Email confirmed successfully.");
-        }
+        //    // Se a confirmação for bem-sucedida, retorne uma resposta de sucesso
+        //    return Ok("Email confirmed successfully.");
+        //}
 
         [HttpGet("Hotmart")]
         public async Task<IActionResult> Hotmart()
@@ -261,31 +276,30 @@ namespace LSF.Controllers
         [HttpGet("GetAll")]
         public IEnumerable<User> Get()
         {
-            return _dbContext.User.ToList();
+            return _dbContext.AspNetUsers.ToList();
         }
 
         // GET api/<UserController>/5
         [HttpGet("GetById{id}")]
         public User Get(int id)
         {
-            return _dbContext.User.FirstOrDefault(t => t.Id == id);
+            return _dbContext.AspNetUsers.FirstOrDefault(t => t.Id == id);
         }
 
         // PUT api/<UserController>/5
         [HttpPut("Put/{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] User updatedUser)
+        public async Task<IActionResult> Put(int id, UserModel updatedUser)
         {
-            var existingUser = await _dbContext.Users.FindAsync(id);
+            var existingUser = await _dbContext.AspNetUsers.FindAsync(id);
             if (existingUser == null)
             {
                 return NotFound("Usuário não encontrado");
             }
 
-            existingUser.UserName = updatedUser.UserName;
-            existingUser.Email = updatedUser.Email;
-            existingUser.PhoneNumber = updatedUser.PhoneNumber;
-            existingUser.UserImage = updatedUser.UserImage;
-            existingUser.Comprovante = updatedUser.Comprovante;
+            existingUser.Email = updatedUser.Email ?? existingUser.Email;
+            existingUser.Password = updatedUser.Password ?? existingUser.Password;
+            existingUser.UserImage = updatedUser.UserImage ?? existingUser.UserImage;
+            existingUser.Comprovante = updatedUser.Comprovante ?? existingUser.Comprovante;
 
             await _dbContext.SaveChangesAsync();
 
@@ -293,48 +307,26 @@ namespace LSF.Controllers
         }
 
         // PUT api/<UserController>/5
-        [HttpPost("UpdateUserAndAddRole")]
-        public async Task<IActionResult> UpdateUserAndAddRole(int userId, string roleName)
+        [HttpPut("UpdateUserAndAddRole")]
+        public async Task<IActionResult> UpdateUserAndAddRole(int userId, int roleName)
         {
             // Busca o usuário pelo ID
-            var user = await _userManager.FindByIdAsync(userId.ToString());
+            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(uid => uid.Id == userId);
             if (user == null)
             {
                 return NotFound("Usuário não encontrado");
             }
 
-            // Atualiza as propriedades do usuário, se necessário
-            // Exemplo: user.UserName = "NovoNome";
+            user.Role = roleName;
+            
+            var result = await _dbContext.SaveChangesAsync();
 
-            // Adiciona a role ao usuário
-            var result = await _userManager.AddToRoleAsync(user, roleName);
-            if (!result.Succeeded)
-            {
-                // Se ocorrer algum erro ao adicionar a role, retorna uma mensagem de erro
-                return BadRequest("Erro ao adicionar a role ao usuário");
-            }
-
-            // Salva as alterações no banco de dados
-            var updateResult = await _userManager.UpdateAsync(user);
-            if (!updateResult.Succeeded)
-            {
-                // Se ocorrer algum erro ao atualizar o usuário, retorna uma mensagem de erro
-                return BadRequest("Erro ao atualizar o usuário");
-            }
-
-            // Retorna uma mensagem de sucesso
             return Ok("Usuário atualizado e role adicionada com sucesso");
         }
 
-        [HttpPost("UploadPdf/{userId}")]
-        public async Task<IActionResult> UploadPdf(string userId, IFormFile pdfFile)
+        [HttpPut("UploadPdf/{userId}")]
+        public async Task<IActionResult> UploadPdf(int userId, IFormFile pdfFile)
         {
-            // Verifica se o ID do usuário é válido
-            if (string.IsNullOrEmpty(userId))
-            {
-                return BadRequest("User ID is required.");
-            }
-
             // Verifica se o arquivo PDF é válido
             if (pdfFile == null || pdfFile.Length == 0)
             {
@@ -342,7 +334,7 @@ namespace LSF.Controllers
             }
 
             // Busca o usuário pelo ID
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(uid => uid.Id == userId);
             if (user == null)
             {
                 return NotFound($"User with ID {userId} not found.");
@@ -359,11 +351,7 @@ namespace LSF.Controllers
                 }
 
                 // Atualiza o usuário com o novo PDF
-                var result = await _userManager.UpdateAsync(user);
-                if (!result.Succeeded)
-                {
-                    return StatusCode(500, $"Failed to update user with ID {userId}.");
-                }
+                var result = await _dbContext.SaveChangesAsync();
 
                 return Ok("PDF uploaded successfully.");
             }
@@ -374,15 +362,9 @@ namespace LSF.Controllers
         }
 
 
-        [HttpPost("UploadImage/{userId}")]
-        public async Task<IActionResult> UploadImage(string userId, IFormFile imageFile)
+        [HttpPut("UploadImage/{userId}")]
+        public async Task<IActionResult> UploadImage(int userId, IFormFile imageFile)
         {
-            // Verifica se o ID do usuário é válido
-            if (string.IsNullOrEmpty(userId))
-            {
-                return BadRequest("User ID is required.");
-            }
-
             // Verifica se o arquivo de imagem é válido
             if (imageFile == null || imageFile.Length == 0)
             {
@@ -390,7 +372,7 @@ namespace LSF.Controllers
             }
 
             // Busca o usuário pelo ID
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(uid => uid.Id == userId);
             if (user == null)
             {
                 return NotFound($"User with ID {userId} not found.");
@@ -412,11 +394,7 @@ namespace LSF.Controllers
                 }
 
                 // Atualiza o usuário com a imagem
-                var result = await _userManager.UpdateAsync(user);
-                if (!result.Succeeded)
-                {
-                    return StatusCode(500, $"Failed to update user with ID {userId}.");
-                }
+                var result = await _dbContext.SaveChangesAsync();
 
                 return Ok("Image uploaded successfully.");
             }
@@ -431,7 +409,7 @@ namespace LSF.Controllers
         public IActionResult Delete(int id)
         {
             // Verifica se o recurso com o ID fornecido existe
-            var user = _dbContext.User.Find(id);
+            var user = _dbContext.AspNetUsers.Find(id);
             if (user == null)
             {
                 return NotFound("Técnico não encontrado");
@@ -440,7 +418,7 @@ namespace LSF.Controllers
             try
             {
                 // Remove o recurso do contexto do banco de dados
-                _dbContext.User.Remove(user);
+                _dbContext.AspNetUsers.Remove(user);
 
                 // Salva as alterações no banco de dados
                 _dbContext.SaveChanges();

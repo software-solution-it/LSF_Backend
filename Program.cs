@@ -21,16 +21,6 @@ builder.Services.AddDbContext<APIDbContext>(option => option.UseMySql(
     )
 );
 
-builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
-{
-    options.SignIn.RequireConfirmedEmail = false;
-})
-    .AddRoles<IdentityRole<int>>()
-    .AddEntityFrameworkStores<APIDbContext>()
-    .AddDefaultTokenProviders()
-    .AddApiEndpoints();
-
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -73,16 +63,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
      };
  });
 
-builder.Services.AddScoped<ExcelService>();
+//builder.Services.AddScoped<ExcelService>();
 
 var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
 
-ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
-app.MapGroup("default").MapIdentityApi<User>();
+//app.MapGroup("default").MapIdentityApi<User>();
 
 app.UseHttpsRedirection();
 
@@ -90,18 +78,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-using(var scope = app.Services.CreateScope())
-{
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
-
-    var roles = new[] { "Admin", "Manager", "User" };
-
-    foreach(var role in roles)
-    {
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole<int>(role));
-    }
-}
 
 app.Run();

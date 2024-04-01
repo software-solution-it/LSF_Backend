@@ -1,6 +1,7 @@
 ﻿using LSF.Data;
 using LSF.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LSF.Controllers
 {
@@ -32,6 +33,21 @@ namespace LSF.Controllers
             }
 
             return tech;
+        }
+
+        [HttpGet("Country")]
+        public async Task<ActionResult<IEnumerable<Technician>>> GetTechniciansByCountry(string country)
+        {
+            var technicians = await _dbContext.Technician
+                .Where(t => t.Country == country)
+                .ToListAsync();
+
+            if (technicians == null || !technicians.Any())
+            {
+                return NotFound();
+            }
+
+            return technicians;
         }
 
         [HttpPost]

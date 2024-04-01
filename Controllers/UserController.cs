@@ -173,41 +173,64 @@ namespace LSF.Controllers
             }
         }
 
-        private async Task<bool> SendEmailAsync(string email, string subject, string confirmLink)
+        [HttpPost("SendEmail")]
+        public ActionResult<bool> SendEmail()
         {
             try
             {
-                var mail = "contato@lavanderiasemfranquia.com";
-                var pw = "App#LSF2024";
+                // Configurações do servidor SMTP do HostGator
+                var smtpHost = "titan.hostgator.com.br";
+                var smtpPort = 587;
+                var smtpUsername = "contato@lavanderiasemfranquia.com"; // Substitua pelo seu e-mail
+                var smtpPassword = "App#LSF2024"; // Substitua pela sua senha
 
-                MailMessage message = new MailMessage();
-                SmtpClient smtpClient = new SmtpClient();
+                // Credenciais de autenticação para o servidor SMTP
+                var credentials = new NetworkCredential(smtpUsername, smtpPassword);
 
-                message.From = new MailAddress(mail);
-                message.To.Add(email);
-                message.Subject = subject;
-                message.IsBodyHtml = true;
-                message.Body = confirmLink;
+                // Configurações do cliente SMTP
+                using (var smtpClient = new SmtpClient(smtpHost, smtpPort))
+                {
+                    smtpClient.UseDefaultCredentials = false;
+                    smtpClient.Credentials = credentials;
+                    smtpClient.EnableSsl = true; // Certifique-se de usar SSL se estiver habilitado para o seu e-mail
 
-                smtpClient.Port = 465; // Porta SMTP padrão para o Gmail
-                smtpClient.Host = "smtp.lavanderiasemfranquia.com"; // Host SMTP do Gmail
+                    // Mensagem de e-mail
+                    var from = new MailAddress(smtpUsername);
+                    var to = new MailAddress("gabrielsantos.new@gmail.com"); // Substitua pelo e-mail do destinatário
+                    var subject = "Assunto do E-mail";
+                    var body = "Corpo do E-mail";
 
-                smtpClient.EnableSsl = true;
-                smtpClient.UseDefaultCredentials = false;
-                smtpClient.Credentials = new NetworkCredential(mail, pw); // Substitua com suas credenciais reais
+                    var message = new MailMessage(from, to)
+                    {
+                        Subject = subject,
+                        Body = body
+                    };
 
-                smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
+                    try
+                    {
+                        // Envie o e-mail de forma síncrona
+                        smtpClient.Send(message);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Aqui você pode lidar com a exceção como desejar
+                        Console.WriteLine($"Erro ao enviar e-mail: {ex.Message}");
+                        // Ou você pode lançar a exceção para ser tratada em um nível superior
+                        throw;
+                    }
 
-                smtpClient.Send(message);
-
-                return true;
+                    return Ok(true);
+                }
             }
             catch (Exception ex)
             {
-                BadRequest($"Ocorreu um erro ao enviar o e-mail: {ex.Message}");
-                return false;
+                Console.WriteLine($"Erro ao enviar e-mail: {ex.Message}");
+                return StatusCode(500, $"Erro ao enviar e-mail: {ex.Message}");
             }
         }
+
+
+
 
         //[HttpGet("ConfirmEmail")]
         //public async Task<IActionResult> ConfirmEmail(string userId, string code)

@@ -243,7 +243,7 @@ namespace LSF.Controllers
             return true;
         }
 
-        [HttpPost("NewPassword")]
+        [HttpPut("NewPassword")]
         public async Task<ActionResult> NewPassword(UserModelRegister model)
         {
             var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(u => u.Email == model.Email);

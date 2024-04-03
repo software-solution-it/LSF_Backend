@@ -1,22 +1,16 @@
 ﻿using LSF.Data;
 using LSF.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
-using NuGet.Protocol.Plugins;
 using System.Text;
-using System.IdentityModel.Tokens;
 using System.Security.Claims;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using IdentityModel.Client;
 using TokenResponse = LSF.Models.TokenResponse;
 using System.Net.Mail;
 using System.Net;
-using System.Text.Encodings.Web;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 
 
 namespace LSF.Controllers
@@ -50,7 +44,6 @@ namespace LSF.Controllers
 
             if (!VerifyPassword(user, model.Password))
             {
-                // Senha incorreta, retornar Unauthorized
                 return Unauthorized();
             }
 
@@ -122,10 +115,9 @@ namespace LSF.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                if(!IsPasswordValidate(model.Password!)) return BadRequest(ModelState);
 
                 var newUser = new User
                 {
@@ -139,130 +131,133 @@ namespace LSF.Controllers
 
                 return Ok("Usuário registrado com sucesso.");
 
-                //if (result)
-                //{
-                //    var userId = await _dbContext.GetUserIdAsync(newUser);
-                //    var code = await _dbContext.GenerateEmailConfirmationTokenAsync(newUser);
-                //    code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-                //    var callbackUrl = Url.Action(action: "ConfirmEmail", controller: "User", values: new { userId = userId, code = code }, protocol: Request.Scheme);
-
-                //    var resultEmail = await SendEmailAsync(newUser.Email, "Confirm Email", $"PleaseConfirm <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'> clickHere </a>");
-
-                //    if (!resultEmail)
-                //    {
-                //        await _dbContext.DeleteAsync(newUser);
-                //        return BadRequest("Falha ao enviar e-mail de confirmação. O usuário foi excluído.");
-                //    }
-
-                //    return Ok("Usuário registrado com sucesso.");
-                //}
-                //else
-                //{
-                //    foreach (var error in result.Errors)
-                //    {
-                //        ModelState.AddModelError("", error.Description);
-                //    }
-                //    return BadRequest(ModelState);
-                //}
             }
             catch (Exception ex)
             {
-                // Tratar a exceção aqui
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Ocorreu um erro durante o processamento da solicitação. {ex}");
             }
         }
 
-        [HttpPost("SendEmail")]
-        public ActionResult<bool> SendEmail()
+        public static bool IsPasswordValidate(string senha)
         {
+            if (senha.Length < 8) return false;
+            if (!senha.Any(char.IsUpper)) return false;
+            if (!senha.Any(char.IsDigit)) return false;
+            if (!Regex.IsMatch(senha, @"[!@#$%^&*()_+=\[{\]};:<>|./?,-]")) return false;
+
+            return true;
+        }
+
+        [HttpPost("ResetPassword")]
+        public async Task<ActionResult> ResetPassword(string Email)
+        {
+            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(u => u.Email == Email);
+
+            if (user == null)
+            {
+                return NotFound("Usuário não encontrado.");
+            }
+
+            var verificationCode = GerarCodigoVerificacao();
+
+            user.RecoveryCode = verificationCode;
+            await _dbContext.SaveChangesAsync();
+
+            var timer = new Timer(async (state) =>
+            {
+                await RemoverCodigoDoBancoAsync(user);
+            }, null, TimeSpan.FromHours(1), TimeSpan.Zero);
+
+            var emailContent = $"Seu código de verificação é: {verificationCode}";
+            var emailSubject = "Confirmação de Email";
+
+            var result = await SendEmailAsync(user.Email, emailSubject, emailContent);
+
+            if (!result)
+            {
+                return BadRequest("Falha ao enviar email de confirmação.");
+            }
+
+            return Ok("Reset password enviado com sucesso.");
+        }
+
+        private int GerarCodigoVerificacao()
+        {
+            var random = new Random();
+            return random.Next(100000, 999999);
+        }
+
+        private async Task RemoverCodigoDoBancoAsync(User user)
+        {
+            if (user != null)
+            {
+                user.RecoveryCode = null;
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+
+        private async Task<bool> SendEmailAsync(string emailDestinatário, string emailSubject, string emailContent)
+        {
+            string remetenteEmail = "contato@lavanderiasemfranquia.com";
+            string remetenteSenha = "App#LSF2024";
+            string destinatarioEmail = emailDestinatário;
+            string smtpServidor = "smtp.titan.email";
+            int porta = 587;
+
             try
             {
-                // Configurações do servidor SMTP do HostGator
-                var smtpHost = "titan.hostgator.com.br";
-                var smtpPort = 587;
-                var smtpUsername = "contato@lavanderiasemfranquia.com"; // Substitua pelo seu e-mail
-                var smtpPassword = "App#LSF2024"; // Substitua pela sua senha
-
-                // Credenciais de autenticação para o servidor SMTP
-                var credentials = new NetworkCredential(smtpUsername, smtpPassword);
-
-                // Configurações do cliente SMTP
-                using (var smtpClient = new SmtpClient(smtpHost, smtpPort))
+                using (SmtpClient smtp = new SmtpClient(smtpServidor, porta))
                 {
-                    smtpClient.UseDefaultCredentials = false;
-                    smtpClient.Credentials = credentials;
-                    smtpClient.EnableSsl = true; // Certifique-se de usar SSL se estiver habilitado para o seu e-mail
-
-                    // Mensagem de e-mail
-                    var from = new MailAddress(smtpUsername);
-                    var to = new MailAddress("gabrielsantos.new@gmail.com"); // Substitua pelo e-mail do destinatário
-                    var subject = "Assunto do E-mail";
-                    var body = "Corpo do E-mail";
-
-                    var message = new MailMessage(from, to)
+                    smtp.EnableSsl = true;
+                    smtp.UseDefaultCredentials = false;
+                    smtp.Credentials = new NetworkCredential(remetenteEmail, remetenteSenha);
+                    using (MailMessage mensagem = new MailMessage(new MailAddress(remetenteEmail, "Contato"), new MailAddress(destinatarioEmail)))
                     {
-                        Subject = subject,
-                        Body = body
-                    };
+                        mensagem.Subject = emailSubject;
+                        mensagem.Body = emailContent;
 
-                    try
-                    {
-                        // Envie o e-mail de forma síncrona
-                        smtpClient.Send(message);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Aqui você pode lidar com a exceção como desejar
-                        Console.WriteLine($"Erro ao enviar e-mail: {ex.Message}");
-                        // Ou você pode lançar a exceção para ser tratada em um nível superior
-                        throw;
+                        await smtp.SendMailAsync(mensagem);
                     }
 
-                    return Ok(true);
+                    return true;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao enviar e-mail: {ex.Message}");
-                return StatusCode(500, $"Erro ao enviar e-mail: {ex.Message}");
+                return false;
             }
         }
 
+        [HttpPost("ConfirmCode")]
+        public async Task<bool> ConfirmCode(string Email, int code)
+        {
+            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(u => u.Email == Email);
 
+            if (user == null) return false;
 
+            if(user.RecoveryCode != code)
+            {
+                return false;
+            }
 
-        //[HttpGet("ConfirmEmail")]
-        //public async Task<IActionResult> ConfirmEmail(string userId, string code)
-        //{
-        //    if (userId == null || code == null)
-        //    {
-        //        // Se userId ou token forem nulos, retorne uma resposta de erro
-        //        return BadRequest("UserId and token must be provided.");
-        //    }
+            return true;
+        }
 
-        //    var user = await _dbContext.FirstOr(userId);
-        //    if (user == null)
-        //    {
-        //        // Se o usuário não for encontrado, retorne uma resposta de erro
-        //        return NotFound($"User with ID {userId} not found.");
-        //    }
+        [HttpPost("NewPassword")]
+        public async Task<ActionResult> NewPassword(UserModelRegister model)
+        {
+            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(u => u.Email == model.Email);
 
-        //    // Decode o token
-        //    var decodedToken = WebEncoders.Base64UrlDecode(code);
-        //    var decodedTokenString = Encoding.UTF8.GetString(decodedToken);
+            if (user == null) return BadRequest("Usuário não encontrado");
 
-        //    // Confirme o e-mail do usuário
-        //    var result = await _dbContext.ConfirmEmailAsync(user, decodedTokenString);
-        //    if (!result.Succeeded)
-        //    {
-        //        // Se a confirmação falhar, retorne uma resposta de erro
-        //        return BadRequest("Email confirmation failed.");
-        //    }
+            if (!IsPasswordValidate(model.Password!)) return BadRequest("Senha inválida");
 
-        //    // Se a confirmação for bem-sucedida, retorne uma resposta de sucesso
-        //    return Ok("Email confirmed successfully.");
-        //}
+            user.Password = model.Password;
+
+            await _dbContext.SaveChangesAsync();
+
+            return Ok();
+        }
 
         [HttpGet("Hotmart")]
         public async Task<IActionResult> Hotmart()

@@ -10,6 +10,7 @@ namespace LSF.Models
         public string? Password { get; set; }
         public byte[]? Comprovante { get; set; }
         public byte[]? UserImage { get; set; }
+        public int? RecoveryCode { get; set; }
         public int? Role { get; set; }
     }
 

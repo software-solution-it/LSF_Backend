@@ -39,7 +39,7 @@ namespace LSF.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUserTechnician(UserTechnicianModel model)
         {
-            var user = await _dbContext.AspNetUsers.FindAsync(model.UserId);
+            var user = await _dbContext.Users.FindAsync(model.UserId);
             if (user == null)
             {
                 return NotFound("Usuário não encontrado.");

@@ -11,6 +11,7 @@ using System.Net;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace LSF.Controllers
@@ -36,7 +37,7 @@ namespace LSF.Controllers
                 return BadRequest(ModelState);
             }
 
-            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(u => u.Email == model.Email);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
             if (user == null)
             {
                 return Unauthorized();
@@ -125,7 +126,7 @@ namespace LSF.Controllers
                     Password = model.Password,
                 };
 
-                var result = await _dbContext.AspNetUsers.AddAsync(newUser);
+                var result = await _dbContext.Users.AddAsync(newUser);
 
                 await _dbContext.SaveChangesAsync();
 
@@ -151,7 +152,7 @@ namespace LSF.Controllers
         [HttpPost("ResetPassword")]
         public async Task<ActionResult> ResetPassword(string Email)
         {
-            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(u => u.Email == Email);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == Email);
 
             if (user == null)
             {
@@ -231,7 +232,7 @@ namespace LSF.Controllers
         [HttpPost("ConfirmCode")]
         public async Task<bool> ConfirmCode(string Email, int code)
         {
-            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(u => u.Email == Email);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == Email);
 
             if (user == null) return false;
 
@@ -246,7 +247,7 @@ namespace LSF.Controllers
         [HttpPut("NewPassword")]
         public async Task<ActionResult> NewPassword(UserModelRegister model)
         {
-            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(u => u.Email == model.Email);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
 
             if (user == null) return BadRequest("Usuário não encontrado");
 
@@ -292,23 +293,24 @@ namespace LSF.Controllers
         }
 
         [HttpGet("GetAll")]
+        [Authorize(Roles = "Admin")]
         public IEnumerable<User> Get()
         {
-            return _dbContext.AspNetUsers.ToList();
+            return _dbContext.Users.ToList();
         }
 
-        // GET api/<UserController>/5
         [HttpGet("GetById{id}")]
+        [Authorize(Roles  = "Manager")]
         public User Get(int id)
         {
-            return _dbContext.AspNetUsers.FirstOrDefault(t => t.Id == id);
+            return _dbContext.Users.FirstOrDefault(t => t.Id == id);
         }
 
         // PUT api/<UserController>/5
         [HttpPut("Put/{id}")]
         public async Task<IActionResult> Put(int id, UserModel updatedUser)
         {
-            var existingUser = await _dbContext.AspNetUsers.FindAsync(id);
+            var existingUser = await _dbContext.Users.FindAsync(id);
             if (existingUser == null)
             {
                 return NotFound("Usuário não encontrado");
@@ -326,18 +328,37 @@ namespace LSF.Controllers
 
         // PUT api/<UserController>/5
         [HttpPut("UpdateUserAndAddRole")]
-        public async Task<IActionResult> UpdateUserAndAddRole(int userId, int roleName)
+        public async Task<IActionResult> UpdateUserAndAddRole(int userId, string roleName)
         {
             // Busca o usuário pelo ID
-            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(uid => uid.Id == userId);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(uid => uid.Id == userId);
             if (user == null)
             {
                 return NotFound("Usuário não encontrado");
             }
 
-            user.Role = roleName;
-            
-            var result = await _dbContext.SaveChangesAsync();
+            // Busca a role pelo nome
+            var role = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+            if (role == null)
+            {
+                return NotFound("Role não encontrada");
+            }
+
+            var existingUserRole = await _dbContext.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == role.Id);
+            if (existingUserRole != null)
+            {
+                return BadRequest("O usuário já possui esta role");
+            }
+
+            var userRole = new UserRole
+            {
+                UserId = userId,
+                RoleId = role.Id
+            };
+
+            user.UserRoles.Add(userRole);
+
+            await _dbContext.SaveChangesAsync();
 
             return Ok("Usuário atualizado e role adicionada com sucesso");
         }
@@ -352,7 +373,7 @@ namespace LSF.Controllers
             }
 
             // Busca o usuário pelo ID
-            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(uid => uid.Id == userId);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(uid => uid.Id == userId);
             if (user == null)
             {
                 return NotFound($"User with ID {userId} not found.");
@@ -390,7 +411,7 @@ namespace LSF.Controllers
             }
 
             // Busca o usuário pelo ID
-            var user = await _dbContext.AspNetUsers.FirstOrDefaultAsync(uid => uid.Id == userId);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(uid => uid.Id == userId);
             if (user == null)
             {
                 return NotFound($"User with ID {userId} not found.");
@@ -427,7 +448,7 @@ namespace LSF.Controllers
         public IActionResult Delete(int id)
         {
             // Verifica se o recurso com o ID fornecido existe
-            var user = _dbContext.AspNetUsers.Find(id);
+            var user = _dbContext.Users.Find(id);
             if (user == null)
             {
                 return NotFound("Técnico não encontrado");
@@ -436,7 +457,7 @@ namespace LSF.Controllers
             try
             {
                 // Remove o recurso do contexto do banco de dados
-                _dbContext.AspNetUsers.Remove(user);
+                _dbContext.Users.Remove(user);
 
                 // Salva as alterações no banco de dados
                 _dbContext.SaveChanges();

@@ -8,6 +8,7 @@ namespace LSF.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class UserSupplierController : ControllerBase
     {
         private readonly APIDbContext _dbContext;

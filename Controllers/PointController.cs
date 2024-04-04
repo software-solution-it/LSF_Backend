@@ -1,11 +1,13 @@
 ﻿using LSF.Data;
 using LSF.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LSF.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PointController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
@@ -35,12 +37,14 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostTecnico(PointModel point)
+        public async Task<IActionResult> PostPoint(PointModel point)
         {
             if (point == null)
             {
                 return BadRequest("Dados do Point inválidos");
             }
+
+            var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
             var newpoint = new Point
             {
@@ -50,10 +54,20 @@ namespace LSF.Controllers
 
             try
             {
-                _dbContext.Point.Add(newpoint);
+
+                var result = await _dbContext.Point.AddAsync(newpoint);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(newpoint);
+                var userPoint = new UserPoint
+                {
+                    UserId = userId,
+                    PointId = newpoint?.Id
+                };
+
+                await _dbContext.User_Point.AddAsync(userPoint);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(userPoint);
             }
             catch (Exception ex)
             {

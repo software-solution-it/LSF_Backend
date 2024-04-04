@@ -1,11 +1,14 @@
 ﻿using LSF.Data;
 using LSF.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Numerics;
 
 namespace LSF.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class GeolocationController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
@@ -35,11 +38,20 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostTecnico(GeolocationModel geo)
+        public async Task<IActionResult> PostGeolocalizacao(GeolocationModel geo)
         {
             if (geo == null)
             {
                 return BadRequest("Dados do Geolocation inválidos");
+            }
+
+            var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
+
+
+
+            if (userId == null)
+            {
+                return Unauthorized("Não foi possível obter o ID do usuário do token.");
             }
 
             var newgeo = new Geolocation
@@ -51,7 +63,17 @@ namespace LSF.Controllers
 
             try
             {
-                _dbContext.Geolocation.Add(newgeo);
+
+                var result = await _dbContext.Geolocation.AddAsync(newgeo);
+                await _dbContext.SaveChangesAsync();
+
+                var userGeo = new UserGeolocation
+                {
+                    UserId = userId,
+                    GeolocationId = newgeo?.Id
+                };
+
+                await _dbContext.User_Geolocation.AddAsync(userGeo);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(newgeo);

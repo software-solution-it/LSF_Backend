@@ -1,11 +1,13 @@
 ﻿using LSF.Data;
 using LSF.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LSF.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class SupplierController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
@@ -35,12 +37,9 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostTecnico(SupplierModel supp)
+        public async Task<IActionResult> PostSupplier(SupplierModel supp)
         {
-            if (supp == null)
-            {
-                return BadRequest("Dados do Supplier inválidos");
-            }
+            var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
             var newsupp = new Supplier
             {
@@ -52,10 +51,20 @@ namespace LSF.Controllers
 
             try
             {
-                _dbContext.Supplier.Add(newsupp);
+
+                var result = await _dbContext.Supplier.AddAsync(newsupp);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(newsupp);
+                var userSupplier = new UserSupplier
+                {
+                    UserId = userId,
+                    SupplierId = newsupp?.Id
+                };
+
+                await _dbContext.User_Supplier.AddAsync(userSupplier);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(userSupplier);
             }
             catch (Exception ex)
             {

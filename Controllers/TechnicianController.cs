@@ -1,5 +1,6 @@
 ﻿using LSF.Data;
 using LSF.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace LSF.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TechnicianController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
@@ -51,12 +53,14 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostTecnico(TechnicianModel tech)
+        public async Task<IActionResult> PostTechnician(TechnicianModel tech)
         {
             if (tech == null)
             {
                 return BadRequest("Dados do técnico inválidos");
             }
+
+            var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
             var newTech = new Technician
             {
@@ -70,10 +74,20 @@ namespace LSF.Controllers
 
             try
             {
-                _dbContext.Technician.Add(newTech);
+
+                var result = await _dbContext.Technician.AddAsync(newTech);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(newTech);
+                var userTechnician = new UserTechnician
+                {
+                    UserId = userId,
+                    TechnicianId = newTech?.Id
+                };
+
+                await _dbContext.User_Technician.AddAsync(userTechnician);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(userTechnician);
             }
             catch (Exception ex)
             {

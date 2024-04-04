@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace LSF.Models
+﻿namespace LSF.Models
 {
     public class Technician
     {

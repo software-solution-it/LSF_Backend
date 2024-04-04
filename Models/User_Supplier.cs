@@ -12,7 +12,7 @@ namespace LSF.Models
         public virtual User? User { get; set; }
 
         [ForeignKey("Supplier")]
-        public int SupplierId { get; set; }
+        public int? SupplierId { get; set; }
         public virtual Supplier? Supplier { get; set; }
     }
 

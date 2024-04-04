@@ -37,26 +37,23 @@ namespace LSF.Controllers
                 return BadRequest(ModelState);
             }
 
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+            var user = await _dbContext.Users
+                .Where(u => u.Email == model.Email)
+                .Join(_dbContext.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { User = u, UserRole = ur })
+                .Join(_dbContext.Roles, ur => ur.UserRole.RoleId, r => r.Id, (ur, r) => new { User = ur.User, Role = r })
+                .FirstOrDefaultAsync();
             if (user == null)
             {
                 return Unauthorized();
             }
 
-            if (!VerifyPassword(user, model.Password))
-            {
-                return Unauthorized();
-            }
-
-            // Crie e configure a chave de segurança
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            // Crie as reivindicações (claims) para o token JWT
             var claims = new[]
             {
-                new Claim("username", user.Email),
-                new Claim("role", "User"),
+                new Claim("userId", user.User.Id.ToString()),
+                new Claim("role", user.Role.Id.ToString()),
             };
 
             var accessToken = new JwtSecurityToken(
@@ -67,16 +64,12 @@ namespace LSF.Controllers
                 signingCredentials: credentials
             );
 
-            // Escreva o token JWT como uma string
             var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
 
-            // Gere um token de atualização (refresh token)
             var refreshToken = GenerateRefreshToken();
 
-            // Crie a resposta contendo o token de acesso e o token de atualização
             var tokenResponse = new TokenResponse(accessTokenString, refreshToken);
 
-            // Retorne um Ok com a resposta contendo os tokens
             return Ok(tokenResponse);
         }
 
@@ -118,7 +111,7 @@ namespace LSF.Controllers
             {
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
-                if(!IsPasswordValidate(model.Password!)) return BadRequest(ModelState);
+                if (!IsPasswordValidate(model.Password!)) return BadRequest(ModelState);
 
                 var newUser = new User
                 {
@@ -127,11 +120,38 @@ namespace LSF.Controllers
                 };
 
                 var result = await _dbContext.Users.AddAsync(newUser);
+                await _dbContext.SaveChangesAsync();
 
+                var userRole = new UserRole
+                {
+                    UserId = newUser.Id,
+                    RoleId = 2
+                };
+
+                await _dbContext.UserRoles.AddAsync(userRole);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok("Usuário registrado com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Ocorreu um erro durante o processamento da solicitação. {ex}");
+            }
+        }
 
+
+
+        [HttpPost("Customer")]
+        public async Task<IActionResult> Customer()
+        {
+            try
+            {
+                var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
+
+               // var result = await _dbContext.Users.AddAsync(newUser);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok("Usuário registrado com sucesso.");
             }
             catch (Exception ex)
             {
@@ -265,8 +285,7 @@ namespace LSF.Controllers
         {
             var client = new HttpClient();
 
-            // Faça a solicitação para obter o token de acesso
-            var requestBody = "{}"; // Seu corpo da solicitação
+            var requestBody = "{}"; 
             var requestToken = new HttpRequestMessage
             {
                 Method = HttpMethod.Post,
@@ -276,9 +295,8 @@ namespace LSF.Controllers
             requestToken.Headers.Add("Authorization", "Basic ZGMxOGUwNjktOWQ0MS00ZDAzLTkxMDYtNTQxNDljOTcwMWFkOmQzNjBiNmE1LTJkYzQtNDE0Zi1hY2Q1LTk0NDQ3MWZhOGYzMQ==");
             var responseToken = await client.SendAsync(requestToken);
             var responseBodyToken = await responseToken.Content.ReadAsStringAsync();
-            var accessToken = ""; // Extrair o token de acesso do responseBodyToken, dependendo do formato da resposta
+            var accessToken = ""; 
 
-            // Faça a solicitação para obter informações sobre as assinaturas usando o token de acesso
             var requestSubscriptions = new HttpRequestMessage
             {
                 Method = HttpMethod.Get,
@@ -306,7 +324,6 @@ namespace LSF.Controllers
             return _dbContext.Users.FirstOrDefault(t => t.Id == id);
         }
 
-        // PUT api/<UserController>/5
         [HttpPut("Put/{id}")]
         public async Task<IActionResult> Put(int id, UserModel updatedUser)
         {
@@ -323,28 +340,34 @@ namespace LSF.Controllers
 
             await _dbContext.SaveChangesAsync();
 
-            return Ok(existingUser);
+            return Ok(existingUser); 
         }
-
-        // PUT api/<UserController>/5
         [HttpPut("UpdateUserAndAddRole")]
-        public async Task<IActionResult> UpdateUserAndAddRole(int userId, string roleName)
+        [Authorize]
+        public async Task<IActionResult> UpdateUserAndAddRole(int roleId)
         {
-            // Busca o usuário pelo ID
+            var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
             var user = await _dbContext.Users.FirstOrDefaultAsync(uid => uid.Id == userId);
             if (user == null)
             {
                 return NotFound("Usuário não encontrado");
             }
 
-            // Busca a role pelo nome
-            var role = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+            var role = await _dbContext.Roles.FirstOrDefaultAsync(r => r.Id == roleId);
             if (role == null)
             {
                 return NotFound("Role não encontrada");
             }
 
-            var existingUserRole = await _dbContext.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == role.Id);
+            var rolesToDelete = await _dbContext.UserRoles
+            .Where(ur => ur.UserId == userId && ur.RoleId != roleId)
+            .ToListAsync();
+
+            _dbContext.UserRoles.RemoveRange(rolesToDelete);
+            await _dbContext.SaveChangesAsync();
+
+
+            var existingUserRole = await _dbContext.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
             if (existingUserRole != null)
             {
                 return BadRequest("O usuário já possui esta role");

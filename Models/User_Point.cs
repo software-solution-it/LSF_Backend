@@ -12,7 +12,7 @@ namespace LSF.Models
         public virtual User? User { get; set; }
 
         [ForeignKey("Point")]
-        public int PointId { get; set; }
+        public int? PointId { get; set; }
         public virtual Point? Point { get; set; }
     }
 

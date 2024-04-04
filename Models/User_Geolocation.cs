@@ -12,7 +12,7 @@ namespace LSF.Models
         public virtual User? User { get; set; }
 
         [ForeignKey("Geolocation")]
-        public int GeolocationId { get; set; }
+        public int? GeolocationId { get; set; }
         public virtual Geolocation? Geolocation { get; set; }
     }
 

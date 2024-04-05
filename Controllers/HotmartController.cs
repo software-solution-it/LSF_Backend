@@ -20,6 +20,7 @@ namespace LSF.Controllers
         [HttpPost("/hotmart/purchase")]
         public IActionResult PostPurchase([FromBody] PurchaseObject purchase)
         {
+
             return Ok(purchase);
         }
 

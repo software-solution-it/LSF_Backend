@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using Microsoft.AspNetCore.Authorization;
+using System;
 
 
 namespace LSF.Controllers
@@ -22,6 +23,7 @@ namespace LSF.Controllers
     {
         private readonly APIDbContext _dbContext;
         private readonly IConfiguration _config;
+        private readonly Random _random = new Random();
 
         public UserController(APIDbContext dbContext, IConfiguration config)
         {
@@ -104,6 +106,14 @@ namespace LSF.Controllers
             }
         }
 
+        private string GenerateRandomChars()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, 3)
+              .Select(s => s[_random.Next(s.Length)]).ToArray());
+        }
+
+
         [HttpPost("Register")]
         public async Task<IActionResult> Register(UserModelRegister model)
         {
@@ -113,8 +123,13 @@ namespace LSF.Controllers
 
                 if (!IsPasswordValidate(model.Password!)) return BadRequest(ModelState);
 
+                string randomChars = GenerateRandomChars();
+
                 var newUser = new User
                 {
+                    Name = model.Name,
+                    Phone = model.Phone,
+                    UserName = $"{model.Name}_{randomChars}",
                     Email = model.Email,
                     Password = model.Password,
                 };
@@ -172,7 +187,11 @@ namespace LSF.Controllers
                                                  User = new
                                                  {
                                                      u.Id,
-                                                     u.Email
+                                                     u.Name,
+                                                     u.UserName,
+                                                     u.Phone,
+                                                     u.Email,
+                                                     u.UserImage,
                                                  },
                                                  Geolocation = g,
                                                  Point = p,
@@ -350,13 +369,6 @@ namespace LSF.Controllers
         public IEnumerable<User> Get()
         {
             return _dbContext.Users.ToList();
-        }
-
-        [HttpGet("GetById{id}")]
-        [Authorize(Roles  = "Manager")]
-        public User Get(int id)
-        {
-            return _dbContext.Users.FirstOrDefault(t => t.Id == id);
         }
 
         [HttpPut("Put/{id}")]

@@ -142,16 +142,51 @@ namespace LSF.Controllers
 
 
         [HttpPost("Customer")]
+        [Authorize]
         public async Task<IActionResult> Customer()
         {
             try
             {
                 var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
-               // var result = await _dbContext.Users.AddAsync(newUser);
+                var userWithDetails = await (from u in _dbContext.Users
+                                             where u.Id == userId
+                                             join ug in _dbContext.User_Geolocation on u.Id equals ug.UserId into ugGroup
+                                             from ug in ugGroup.DefaultIfEmpty()
+                                             join up in _dbContext.User_Point on u.Id equals up.UserId into upGroup
+                                             from up in upGroup.DefaultIfEmpty()
+                                             join us in _dbContext.User_Supplier on u.Id equals us.UserId into usGroup
+                                             from us in usGroup.DefaultIfEmpty()
+                                             join ut in _dbContext.User_Technician on u.Id equals ut.UserId into utGroup
+                                             from ut in utGroup.DefaultIfEmpty()
+                                             join g in _dbContext.Geolocation on ug.GeolocationId equals g.Id into gGroup
+                                             from g in gGroup.DefaultIfEmpty()
+                                             join p in _dbContext.Point on up.PointId equals p.Id into pGroup
+                                             from p in pGroup.DefaultIfEmpty()
+                                             join s in _dbContext.Supplier on us.SupplierId equals s.Id into sGroup
+                                             from s in sGroup.DefaultIfEmpty()
+                                             join t in _dbContext.Technician on ut.TechnicianId equals t.Id into tGroup
+                                             from t in tGroup.DefaultIfEmpty()
+                                             select new
+                                             {
+                                                 User = new
+                                                 {
+                                                     u.Id,
+                                                     u.Email
+                                                 },
+                                                 Geolocation = g,
+                                                 Point = p,
+                                                 Supplier = s,
+                                                 Technician = t
+                                             }).FirstOrDefaultAsync();
+
+
+
+
+
                 await _dbContext.SaveChangesAsync();
 
-                return Ok("Usuário registrado com sucesso.");
+                return Ok(userWithDetails);
             }
             catch (Exception ex)
             {

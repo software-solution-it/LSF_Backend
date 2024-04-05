@@ -8,7 +8,7 @@ namespace LSF.Controllers
     [Route("[controller]")]
     [ApiController]
     [Authorize]
-    public class CustomerController : ControllerBase
+    public class HotmartController : ControllerBase
     {
         // GET: api/<Hotmart>
         [HttpGet("/hotmart/purchase")]

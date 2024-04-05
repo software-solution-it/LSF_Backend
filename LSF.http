@@ -1,4 +1,4 @@
-@LSF_HostAddress = http://localhost:5140
+@LSF_HostAddress = http://localhost:5000
 
 GET {{LSF_HostAddress}}/weatherforecast/
 Accept: application/json

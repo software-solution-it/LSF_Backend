@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PurchaseObjects;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -7,18 +8,17 @@ namespace LSF.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    [Authorize]
     public class HotmartController : ControllerBase
     {
         // GET: api/<Hotmart>
         [HttpGet("/hotmart/purchase")]
-        public IActionResult Get(Purchase objeto)
+        public IActionResult Get(PurchaseObject objeto)
         {
             return Ok(objeto);
         }
 
         [HttpPost("/hotmart/purchase")]
-        public IActionResult PostPurchase([FromBody] Purchase purchase)
+        public IActionResult PostPurchase([FromBody] PurchaseObject purchase)
         {
             return Ok(purchase);
         }

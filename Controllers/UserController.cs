@@ -32,7 +32,7 @@ namespace LSF.Controllers
         }
 
         [HttpPost("Login")]
-        public async Task<IActionResult> Login(UserModelRegister model)
+        public async Task<IActionResult> Login(string email, string password)
         {
             if (!ModelState.IsValid)
             {
@@ -40,7 +40,7 @@ namespace LSF.Controllers
             }
 
             var user = await _dbContext.Users
-                .Where(u => u.Email == model.Email)
+                .Where(u => u.Email == email)
                 .Join(_dbContext.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { User = u, UserRole = ur })
                 .Join(_dbContext.Roles, ur => ur.UserRole.RoleId, r => r.Id, (ur, r) => new { User = ur.User, Role = r })
                 .FirstOrDefaultAsync();
@@ -73,15 +73,6 @@ namespace LSF.Controllers
             var tokenResponse = new TokenResponse(accessTokenString, refreshToken);
 
             return Ok(tokenResponse);
-        }
-        private string HashPassword(string password)
-        {
-            // Aqui você deve implementar a lógica para criar um hash seguro da senha fornecida.
-            // Por razões de segurança, é altamente recomendável usar uma biblioteca de hash de senha robusta, como BCrypt ou PBKDF2.
-            // Este método é apenas um esboço e você precisa implementá-lo de acordo com suas necessidades.
-            // Aqui está um exemplo simplificado:
-
-            return password; // Exemplo: esta implementação simplesmente retorna a senha não hashada, o que não é seguro em produção.
         }
 
         private string GenerateRefreshToken()

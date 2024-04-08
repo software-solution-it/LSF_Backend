@@ -410,8 +410,21 @@ namespace LSF.Controllers
 
             await _dbContext.SaveChangesAsync();
 
-            return Ok(existingUser); 
+            var updatedUserData = new
+            {
+                existingUser.Id,
+                existingUser.Name,
+                existingUser.UserName,
+                existingUser.Phone,
+                existingUser.Email,
+                existingUser.Password,
+                existingUser.Comprovante,
+                existingUser.UserImage
+            };
+
+            return Ok(updatedUserData);
         }
+
         [HttpPut("UpdateUserAndAddRole")]
         [Authorize]
         public async Task<IActionResult> UpdateUserAndAddRole(int roleId)

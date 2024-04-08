@@ -31,7 +31,6 @@ namespace LSF.Models
         public string? Password { get; set; }
         public byte[]? Comprovante { get; set; }
         public byte[]? UserImage { get; set; }
-        public virtual ICollection<UserRole>? UserRoles { get; set; }
     }
 
     public class UserModelRegister

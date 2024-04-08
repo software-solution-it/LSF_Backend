@@ -404,6 +404,9 @@ namespace LSF.Controllers
             existingUser.Password = updatedUser.Password ?? existingUser.Password;
             existingUser.UserImage = updatedUser.UserImage ?? existingUser.UserImage;
             existingUser.Comprovante = updatedUser.Comprovante ?? existingUser.Comprovante;
+            existingUser.Name = updatedUser.Name ?? existingUser.Name;
+            existingUser.UserName = updatedUser.UserName ?? existingUser.UserName;
+            existingUser.Phone = updatedUser.Phone ?? existingUser.Phone;
 
             await _dbContext.SaveChangesAsync();
 

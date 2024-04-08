@@ -344,9 +344,24 @@ namespace LSF.Controllers
         }
 
         [HttpGet("GetAll")]
-        public IEnumerable<User> Get()
+        public async Task<IActionResult> GetAll()
         {
-            return _dbContext.Users.ToList();
+            var users = await _dbContext.Users
+                                        .Select(u => new
+                                        {
+                                            u.Id,
+                                            u.Name,
+                                            u.UserName,
+                                            u.Phone,
+                                            u.Email,
+                                            u.Password,
+                                            u.Comprovante,
+                                            u.UserImage,
+                                            u.RecoveryCode
+                                        })
+                                        .ToListAsync();
+
+            return Ok(users);
         }
 
         [HttpGet("GetById/{id}")]

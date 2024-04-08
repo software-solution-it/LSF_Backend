@@ -349,7 +349,7 @@ namespace LSF.Controllers
             return _dbContext.Users.ToList();
         }
 
-        [HttpGet("GetById/{Id}")]
+        [HttpGet("GetById/{id}")]
         public ActionResult<User> Get(int id)
         {
             var newUser = _dbContext.Users.FirstOrDefault(user => user.Id == id);

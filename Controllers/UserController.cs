@@ -365,13 +365,30 @@ namespace LSF.Controllers
         }
 
         [HttpGet("GetById/{id}")]
-        public ActionResult<User> Get(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var newUser = _dbContext.Users.FirstOrDefault(user => user.Id == id);
+            var user = await _dbContext.Users
+                                       .Where(u => u.Id == id)
+                                       .Select(u => new
+                                       {
+                                           u.Id,
+                                           u.Name,
+                                           u.UserName,
+                                           u.Phone,
+                                           u.Email,
+                                           u.Password,
+                                           u.Comprovante,
+                                           u.UserImage,
+                                           u.RecoveryCode
+                                       })
+                                       .FirstOrDefaultAsync();
 
-            if (newUser == null) return NotFound("Usuário não encontrado");
+            if (user == null)
+            {
+                return NotFound("Usuário não encontrado");
+            }
 
-            return Ok(newUser);
+            return Ok(user);
         }
 
         [HttpPut("Put/{id}")]

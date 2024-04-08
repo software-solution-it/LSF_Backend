@@ -344,10 +344,19 @@ namespace LSF.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Roles = "Admin")]
         public IEnumerable<User> Get()
         {
             return _dbContext.Users.ToList();
+        }
+
+        [HttpGet("GetById/{Id}")]
+        public ActionResult<User> Get(int id)
+        {
+            var newUser = _dbContext.Users.FirstOrDefault(user => user.Id == id);
+
+            if (newUser == null) return NotFound("Usuário não encontrado");
+
+            return Ok(newUser);
         }
 
         [HttpPut("Put/{id}")]

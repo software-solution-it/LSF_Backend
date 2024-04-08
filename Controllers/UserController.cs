@@ -74,18 +74,6 @@ namespace LSF.Controllers
 
             return Ok(tokenResponse);
         }
-
-        private bool VerifyPassword(User user, string password)
-        {
-            // Aqui você deve implementar a lógica para verificar se a senha fornecida corresponde à senha armazenada no banco de dados.
-            // Por exemplo, você pode comparar o hash da senha fornecida com o hash de senha armazenado no banco de dados.
-            // Não esqueça de considerar as técnicas de segurança adequadas, como o uso de funções de hash seguras (por exemplo, BCrypt, PBKDF2).
-            // Este método é apenas um esboço e você precisa implementá-lo de acordo com suas necessidades.
-            // Aqui está um exemplo simplificado:
-
-            return user.Password == HashPassword(password);
-        }
-
         private string HashPassword(string password)
         {
             // Aqui você deve implementar a lógica para criar um hash seguro da senha fornecida.

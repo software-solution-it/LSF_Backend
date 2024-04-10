@@ -451,7 +451,8 @@ namespace LSF.Controllers
                 existingUser.Email,
                 existingUser.Password,
                 existingUser.Receipt,
-                existingUser.UserImage
+                existingUser.UserImage,
+                existingUser.ReceiptConfirmed
             };
 
             return Ok(updatedUserData);

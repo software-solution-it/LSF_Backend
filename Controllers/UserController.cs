@@ -112,22 +112,22 @@ namespace LSF.Controllers
         }
 
         [HttpPost("Register")]
-        public async Task<IActionResult> Register(string Email, string Password)
+        public async Task<IActionResult> Register(UserModel model)
         {
             try
             {
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
-                if (!IsPasswordValidate(Password!)) return BadRequest(ModelState);
+                if (!IsPasswordValidate(model.Password!)) return BadRequest(ModelState);
 
-                var hashedPassword = HashPassword(Password);
+                var hashedPassword = HashPassword(model.Password);
 
                 var newUser = new User
                 {
-                    Name = "",
-                    UserName = "",
-                    Phone = "",
-                    Email = Email,
+                    Name = model.Name,
+                    UserName = model.UserName,
+                    Phone = model.Phone,
+                    Email = model.Email,
                     Password = hashedPassword,
                 };
 

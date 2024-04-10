@@ -80,20 +80,25 @@ namespace LSF.Controllers
         {
             using (SHA256 sha256Hash = SHA256.Create())
             {
-                string hashedPassword = ComputeHash(sha256Hash, password);
+                string hashedPassword = HashPassword(password);
                 return hashedPassword == storedHash;
             }
         }
 
-        static string ComputeHash(SHA256 sha256Hash, string input)
+        static string HashPassword(string password)
         {
-            byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(input));
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < bytes.Length; i++)
+            using (SHA256 sha256Hash = SHA256.Create())
             {
-                builder.Append(bytes[i].ToString("x2"));
+                // Calcula o hash da senha
+                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
             }
-            return builder.ToString();
         }
 
         private string GenerateRefreshToken()
@@ -197,23 +202,6 @@ namespace LSF.Controllers
                 T temp = array[n];
                 array[n] = array[k];
                 array[k] = temp;
-            }
-        }
-
-        private string HashPassword(string password)
-        {
-            using (SHA256 sha256Hash = SHA256.Create())
-            {
-                // Calcula o hash da senha
-                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
-
-                // Converte o array de bytes para uma string hexadecimal
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    builder.Append(bytes[i].ToString("x2"));
-                }
-                return builder.ToString();
             }
         }
 

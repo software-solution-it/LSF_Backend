@@ -161,11 +161,9 @@ namespace LSF.Controllers
             const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#";
             char[] password = new char[length];
 
-            // Adicionar pelo menos uma letra maiúscula
-            password[0] = chars[RandomNumber(chars.Length)];
+            password[0] = chars[RandomNumber(26)]; 
 
-            // Adicionar pelo menos um dígito
-            password[1] = chars[RandomNumber(chars.Length - 10) + 52];
+            password[1] = chars[RandomNumber(10) + 52];
 
             password[2] = chars[RandomNumber(31)];
 

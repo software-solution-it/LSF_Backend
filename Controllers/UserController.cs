@@ -25,6 +25,7 @@ namespace LSF.Controllers
         private readonly APIDbContext _dbContext;
         private readonly IConfiguration _config;
         private readonly Random _random = new Random();
+        private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 
         public UserController(APIDbContext dbContext, IConfiguration config)
         {
@@ -123,6 +124,8 @@ namespace LSF.Controllers
                 if (!IsPasswordValidate(model.Password!)) return BadRequest(ModelState);
 
                 string randomChars = GenerateRandomChars();
+                var randomPassword = GeneratePassword();
+                var hashedPassword = HashPassword(randomPassword);
 
                 var newUser = new User
                 {
@@ -130,7 +133,7 @@ namespace LSF.Controllers
                     Phone = model.Phone,
                     UserName = $"{model.Name}_{randomChars}",
                     Email = model.Email,
-                    Password = model.Password,
+                    Password = hashedPassword,
                 };
 
                 var result = await _dbContext.Users.AddAsync(newUser);
@@ -153,7 +156,68 @@ namespace LSF.Controllers
             }
         }
 
+        public static string GeneratePassword(int length = 12)
+        {
+            const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#";
+            char[] password = new char[length];
 
+            // Adicionar pelo menos uma letra maiúscula
+            password[0] = chars[RandomNumber(chars.Length)];
+
+            // Adicionar pelo menos um dígito
+            password[1] = chars[RandomNumber(chars.Length - 10) + 52];
+
+            password[2] = chars[RandomNumber(31)];
+
+            for (int i = 3; i < length; i++)
+            {
+                password[i] = chars[RandomNumber(chars.Length)];
+            }
+
+            Shuffle(password);
+
+            return new string(password);
+        }
+
+        private static int RandomNumber(int maxValue)
+        {
+            byte[] randomNumber = new byte[1];
+            _rng.GetBytes(randomNumber);
+            double asciiValueOfRandomCharacter = Convert.ToDouble(randomNumber[0]);
+            double multiplier = Math.Max(0, (asciiValueOfRandomCharacter / 255d) - 0.00000000001d);
+            int range = maxValue - 1;
+            double randomValueInRange = Math.Floor(multiplier * range + 0.5d);
+            return Convert.ToInt32(randomValueInRange);
+        }
+
+        private static void Shuffle<T>(T[] array)
+        {
+            int n = array.Length;
+            while (n > 1)
+            {
+                int k = RandomNumber(n--);
+                T temp = array[n];
+                array[n] = array[k];
+                array[k] = temp;
+            }
+        }
+
+        private string HashPassword(string password)
+        {
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                // Calcula o hash da senha
+                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+                // Converte o array de bytes para uma string hexadecimal
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
 
         [HttpPost("Customer")]
         [Authorize]
@@ -428,6 +492,7 @@ namespace LSF.Controllers
             existingUser.Name = updatedUser.Name ?? existingUser.Name;
             existingUser.UserName = updatedUser.UserName ?? existingUser.UserName;
             existingUser.Phone = updatedUser.Phone ?? existingUser.Phone;
+            existingUser.ReceiptConfirmed = updatedUser.ReceiptConfirmed ?? existingUser.ReceiptConfirmed;
 
             await _dbContext.SaveChangesAsync();
 

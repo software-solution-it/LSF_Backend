@@ -31,6 +31,7 @@ namespace LSF.Models
         public string? Email { get; set; }
         public string? Password { get; set; }
         public byte[]? Receipt { get; set; }
+        public int? ReceiptConfirmed { get; set; }
         public byte[]? UserImage { get; set; }
     }
 

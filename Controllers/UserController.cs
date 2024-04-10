@@ -48,7 +48,7 @@ namespace LSF.Controllers
             if (user == null) return Unauthorized("Usuário não encontrado");
 
             if (!VerifyPassword(password, user.User.Password)) return Unauthorized("Senha incorreta");
-            
+
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -111,33 +111,23 @@ namespace LSF.Controllers
             }
         }
 
-        private string GenerateRandomChars()
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            return new string(Enumerable.Repeat(chars, 3)
-              .Select(s => s[_random.Next(s.Length)]).ToArray());
-        }
-
-
         [HttpPost("Register")]
-        public async Task<IActionResult> Register(UserModelRegister model)
+        public async Task<IActionResult> Register(string Email, string Password)
         {
             try
             {
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
-                if (!IsPasswordValidate(model.Password!)) return BadRequest(ModelState);
+                if (!IsPasswordValidate(Password!)) return BadRequest(ModelState);
 
-                string randomChars = GenerateRandomChars();
-                var randomPassword = GeneratePassword();
-                var hashedPassword = HashPassword(randomPassword);
+                var hashedPassword = HashPassword(Password);
 
                 var newUser = new User
                 {
-                    Name = model.Name,
-                    Phone = model.Phone,
-                    UserName = $"{model.Name}_{randomChars}",
-                    Email = model.Email,
+                    Name = "",
+                    UserName = "",
+                    Phone = "",
+                    Email = Email,
                     Password = hashedPassword,
                 };
 
@@ -384,36 +374,6 @@ namespace LSF.Controllers
             return Ok();
         }
 
-        [HttpGet("Hotmart")]
-        public async Task<IActionResult> Hotmart()
-        {
-            var client = new HttpClient();
-
-            var requestBody = "{}"; 
-            var requestToken = new HttpRequestMessage
-            {
-                Method = HttpMethod.Post,
-                RequestUri = new Uri("https://api-sec-vlc.hotmart.com/security/oauth/token?grant_type=client_credentials&client_id=dc18e069-9d41-4d03-9106-54149c9701ad&client_secret=d360b6a5-2dc4-414f-acd5-944471fa8f31"),
-                Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json")
-            };
-            requestToken.Headers.Add("Authorization", "Basic ZGMxOGUwNjktOWQ0MS00ZDAzLTkxMDYtNTQxNDljOTcwMWFkOmQzNjBiNmE1LTJkYzQtNDE0Zi1hY2Q1LTk0NDQ3MWZhOGYzMQ==");
-            var responseToken = await client.SendAsync(requestToken);
-            var responseBodyToken = await responseToken.Content.ReadAsStringAsync();
-            var accessToken = ""; 
-
-            var requestSubscriptions = new HttpRequestMessage
-            {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri("https://sandbox.hotmart.com/payments/api/v1/subscriptions"),
-            };
-            requestSubscriptions.Headers.Add("Authorization", $"Bearer {accessToken}");
-
-            var responseSubscriptions = await client.SendAsync(requestSubscriptions);
-            var responseBodySubscriptions = await responseSubscriptions.Content.ReadAsStringAsync();
-
-            return Ok(responseBodySubscriptions);
-        }
-
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll()
         {
@@ -621,7 +581,6 @@ namespace LSF.Controllers
             }
         }
 
-        // DELETE api/<UserController>/5
         [HttpDelete("Delete{id}")]
         public IActionResult Delete(int id)
         {

@@ -14,9 +14,10 @@ namespace LSF.Models
 
         public string? Email { get; set; }
         public string? Password { get; set; }
-        public byte[]? Comprovante { get; set; }
+        public byte[]? Receipt { get; set; }
         public byte[]? UserImage { get; set; }
         public int? RecoveryCode { get; set; }
+        public int? ReceiptConfirmed { get; set; }
         public virtual ICollection<UserRole>? UserRoles { get; set; }
     }
 

@@ -356,7 +356,7 @@ namespace LSF.Controllers
                                             u.Phone,
                                             u.Email,
                                             u.Password,
-                                            u.Comprovante,
+                                            u.Receipt,
                                             u.UserImage,
                                             u.RecoveryCode
                                         })
@@ -378,7 +378,7 @@ namespace LSF.Controllers
                                            u.Phone,
                                            u.Email,
                                            u.Password,
-                                           u.Comprovante,
+                                           u.Receipt,
                                            u.UserImage,
                                            u.RecoveryCode
                                        })
@@ -404,7 +404,7 @@ namespace LSF.Controllers
             existingUser.Email = updatedUser.Email ?? existingUser.Email;
             existingUser.Password = updatedUser.Password ?? existingUser.Password;
             existingUser.UserImage = updatedUser.UserImage ?? existingUser.UserImage;
-            existingUser.Comprovante = updatedUser.Comprovante ?? existingUser.Comprovante;
+            existingUser.Receipt = updatedUser.Receipt ?? existingUser.Receipt;
             existingUser.Name = updatedUser.Name ?? existingUser.Name;
             existingUser.UserName = updatedUser.UserName ?? existingUser.UserName;
             existingUser.Phone = updatedUser.Phone ?? existingUser.Phone;
@@ -419,7 +419,7 @@ namespace LSF.Controllers
                 existingUser.Phone,
                 existingUser.Email,
                 existingUser.Password,
-                existingUser.Comprovante,
+                existingUser.Receipt,
                 existingUser.UserImage
             };
 
@@ -493,7 +493,7 @@ namespace LSF.Controllers
                 {
                     await pdfFile.CopyToAsync(memoryStream);
                     // Atualiza apenas o PDF do usuário
-                    user.Comprovante = memoryStream.ToArray();
+                    user.Receipt = memoryStream.ToArray();
                 }
 
                 // Atualiza o usuário com o novo PDF

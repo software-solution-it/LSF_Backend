@@ -438,7 +438,7 @@ namespace LSF.Controllers
             existingUser.Name = updatedUser.Name ?? existingUser.Name;
             existingUser.UserName = updatedUser.UserName ?? existingUser.UserName;
             existingUser.Phone = updatedUser.Phone ?? existingUser.Phone;
-            existingUser.ReceiptConfirmed = updatedUser.ReceiptConfirmed ?? existingUser.ReceiptConfirmed;
+            existingUser.ReceiptConfirmed = updatedUser.ReceiptConfirmed;
 
             await _dbContext.SaveChangesAsync();
 

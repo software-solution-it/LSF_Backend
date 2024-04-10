@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using Microsoft.AspNetCore.Authorization;
 using System;
+using System.Security.Cryptography;
 
 
 namespace LSF.Controllers
@@ -34,20 +35,19 @@ namespace LSF.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login(string email, string password)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            
 
             var user = await _dbContext.Users
                 .Where(u => u.Email == email)
                 .Join(_dbContext.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { User = u, UserRole = ur })
                 .Join(_dbContext.Roles, ur => ur.UserRole.RoleId, r => r.Id, (ur, r) => new { User = ur.User, Role = r })
                 .FirstOrDefaultAsync();
-            if (user == null)
-            {
-                return Unauthorized();
-            }
+
+            if (user == null) return Unauthorized("Usuário não encontrado");
+
+            if (!VerifyPassword(password, user.User.Password)) return Unauthorized("Senha incorreta");
+            
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -73,6 +73,26 @@ namespace LSF.Controllers
             var tokenResponse = new TokenResponse(accessTokenString, refreshToken);
 
             return Ok(tokenResponse);
+        }
+
+        static bool VerifyPassword(string password, string storedHash)
+        {
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                string hashedPassword = ComputeHash(sha256Hash, password);
+                return hashedPassword == storedHash;
+            }
+        }
+
+        static string ComputeHash(SHA256 sha256Hash, string input)
+        {
+            byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(input));
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                builder.Append(bytes[i].ToString("x2"));
+            }
+            return builder.ToString();
         }
 
         private string GenerateRefreshToken()

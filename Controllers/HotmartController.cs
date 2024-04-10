@@ -9,6 +9,7 @@ using System.Net.Mail;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
+using System.Text;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -40,6 +41,7 @@ namespace LSF.Controllers
 
             var randomCharts = GenerateRandomChars();
             var randomPassword = GeneratePassword();
+            var hashedPassword = HashPassword(randomPassword);
 
             var newUser = new User
             {
@@ -47,7 +49,7 @@ namespace LSF.Controllers
                 UserName = $"{newBuyer.Name}_{randomCharts}",
                 Email = newBuyer.Email,
                 Phone = newBuyer.CheckoutPhone ?? "",
-                Password = randomPassword
+                Password = hashedPassword
 
             };
 
@@ -71,6 +73,23 @@ namespace LSF.Controllers
             await _dbContext.SaveChangesAsync();
 
             return Ok(purchase);
+        }
+
+        static string HashPassword(string password)
+        {
+            using (SHA256 sha256Hash = SHA256.Create())
+            {
+                // Calcula o hash da senha
+                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+                // Converte o array de bytes para uma string hexadecimal
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
+            }
         }
 
         private async Task<bool> SendEmailAsync(string emailDestinatário, string emailSubject, string emailContent)

@@ -388,7 +388,8 @@ namespace LSF.Controllers
                                             u.Password,
                                             u.Receipt,
                                             u.UserImage,
-                                            u.RecoveryCode
+                                            u.RecoveryCode,
+                                            u.ReceiptConfirmed
                                         })
                                         .ToListAsync();
 

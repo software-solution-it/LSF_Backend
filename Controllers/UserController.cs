@@ -399,28 +399,48 @@ namespace LSF.Controllers
         [HttpGet("GetById/{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var user = await _dbContext.Users
-                                       .Where(u => u.Id == id)
-                                       .Select(u => new
-                                       {
-                                           u.Id,
-                                           u.Name,
-                                           u.UserName,
-                                           u.Phone,
-                                           u.Email,
-                                           u.Password,
-                                           u.Receipt,
-                                           u.UserImage,
-                                           u.RecoveryCode
-                                       })
-                                       .FirstOrDefaultAsync();
+            var userWithDetails = await (from u in _dbContext.Users
+                                         where u.Id == id
+                                         join ug in _dbContext.User_Geolocation on u.Id equals ug.UserId into ugGroup
+                                         from ug in ugGroup.DefaultIfEmpty()
+                                         join up in _dbContext.User_Point on u.Id equals up.UserId into upGroup
+                                         from up in upGroup.DefaultIfEmpty()
+                                         join us in _dbContext.User_Supplier on u.Id equals us.UserId into usGroup
+                                         from us in usGroup.DefaultIfEmpty()
+                                         join ut in _dbContext.User_Technician on u.Id equals ut.UserId into utGroup
+                                         from ut in utGroup.DefaultIfEmpty()
+                                         join g in _dbContext.Geolocation on ug.GeolocationId equals g.Id into gGroup
+                                         from g in gGroup.DefaultIfEmpty()
+                                         join p in _dbContext.Point on up.PointId equals p.Id into pGroup
+                                         from p in pGroup.DefaultIfEmpty()
+                                         join s in _dbContext.Supplier on us.SupplierId equals s.Id into sGroup
+                                         from s in sGroup.DefaultIfEmpty()
+                                         join t in _dbContext.Technician on ut.TechnicianId equals t.Id into tGroup
+                                         from t in tGroup.DefaultIfEmpty()
+                                         select new
+                                         {
+                                             User = new
+                                             {
+                                                 u.Id,
+                                                 u.Name,
+                                                 u.UserName,
+                                                 u.Phone,
+                                                 u.Email,
+                                                 u.UserImage,
+                                                 u.ReceiptConfirmed
+                                             },
+                                             Geolocation = g,
+                                             Point = p,
+                                             Supplier = s,
+                                             Technician = t
+                                         }).FirstOrDefaultAsync();
 
-            if (user == null)
+            if (userWithDetails == null)
             {
                 return NotFound("Usuário não encontrado");
             }
 
-            return Ok(user);
+            return Ok(userWithDetails);
         }
 
         [HttpPut("Put/{id}")]

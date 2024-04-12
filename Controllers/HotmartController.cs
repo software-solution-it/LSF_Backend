@@ -94,10 +94,10 @@ namespace LSF.Controllers
 
         private async Task<bool> SendEmailAsync(string emailDestinatário, string emailSubject, string emailContent)
         {
-            string remetenteEmail = "contato@lavanderiasemfranquia.com";
-            string remetenteSenha = "App#LSF2024";
+            string remetenteEmail = "suporte@faculdadedalavanderia.com.br";
+            string remetenteSenha = "Lavanderiaprojeto#1";
             string destinatarioEmail = emailDestinatário;
-            string smtpServidor = "smtp.titan.email";
+            string smtpServidor = "smtp.hostinger.com";
             int porta = 587;
 
             try

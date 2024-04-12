@@ -427,6 +427,7 @@ namespace LSF.Controllers
                                                  u.Phone,
                                                  u.Email,
                                                  u.UserImage,
+                                                 u.Receipt,
                                                  u.ReceiptConfirmed
                                              },
                                              Geolocation = g,

@@ -24,7 +24,7 @@ namespace LSF.Controllers
     {
         private readonly APIDbContext _dbContext;
         private readonly IConfiguration _config;
-        private readonly Random _random = new Random();
+        private Random _random = new Random();
         private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 
         public UserController(APIDbContext dbContext, IConfiguration config)
@@ -151,16 +151,16 @@ namespace LSF.Controllers
             }
         }
 
-        public static string GeneratePassword(int length = 12)
+        private string GeneratePassword(int length = 12)
         {
             const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#";
             char[] password = new char[length];
 
-            password[0] = chars[RandomNumber(26)]; 
+            password[0] = chars[_random.Next(26, 52)];
 
-            password[1] = chars[RandomNumber(10) + 52];
+            password[1] = chars[_random.Next(52, 62)];
 
-            password[2] = chars[RandomNumber(31)];
+            password[2] = chars[_random.Next(62)];
 
             for (int i = 3; i < length; i++)
             {

@@ -48,10 +48,12 @@ namespace LSF.Data
         public DbSet<Point> Point { get; set; }
         public DbSet<Supplier> Supplier { get; set; }
         public DbSet<Technician> Technician { get; set; }
+        public DbSet<Inauguration> Inaugurations { get; set; }
         public DbSet<UserGeolocation> User_Geolocation { get; set; }
         public DbSet<UserPoint> User_Point { get; set; }
         public DbSet<UserSupplier> User_Supplier { get; set; }
         public DbSet<UserTechnician> User_Technician { get; set; }
+        public DbSet<UserInauguration> User_Inauguration { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
     }

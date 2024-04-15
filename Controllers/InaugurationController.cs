@@ -20,13 +20,13 @@ namespace LSF.Controllers
         [HttpGet("GetAll")]
         public IEnumerable<Inauguration> GetAll()
         {
-            return _dbContext.Inaugurations.ToList();
+            return _dbContext.Inauguration.ToList();
         }
 
         [HttpGet("{id}")]
         public ActionResult<Inauguration> Get(int id)
         {
-            var Inauguration = _dbContext.Inaugurations.FirstOrDefault(t => t.Id == id);
+            var Inauguration = _dbContext.Inauguration.FirstOrDefault(t => t.Id == id);
 
             if (Inauguration == null) return BadRequest();
 
@@ -47,7 +47,7 @@ namespace LSF.Controllers
 
             try
             {
-                var result = await _dbContext.Inaugurations.AddAsync(newInauguration);
+                var result = await _dbContext.Inauguration.AddAsync(newInauguration);
                 await _dbContext.SaveChangesAsync();
 
                 var userInauguration = new UserInauguration

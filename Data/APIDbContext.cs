@@ -36,6 +36,7 @@ namespace LSF.Data
                 new Role { Id = 2, Name = "User" },
                 new Role { Id = 3, Name = "Manager" }
             );
+
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -50,6 +51,9 @@ namespace LSF.Data
         public DbSet<Technician> Technician { get; set; }
         public DbSet<Inauguration> Inauguration { get; set; }
         public DbSet<BotError> BotError { get; set; }
+        public DbSet<ProductDomain> Product_Domain { get; set; }
+        public DbSet<SupplierDomain> Supplier_Domain { get; set; }
+        public DbSet<UserProduct> User_Product { get; set; }
         public DbSet<UserGeolocation> User_Geolocation { get; set; }
         public DbSet<UserPoint> User_Point { get; set; }
         public DbSet<UserSupplier> User_Supplier { get; set; }

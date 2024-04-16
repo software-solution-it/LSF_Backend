@@ -2,12 +2,13 @@
 using LSF.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LSF.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class SupplierController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
@@ -36,6 +37,33 @@ namespace LSF.Controllers
             return supp;
         }
 
+        [HttpGet("SupplierType")]
+        public ActionResult<IEnumerable<Supplier>> SupplierDomain(int supplierType)
+        {
+            var results = _dbContext.Supplier
+                .Include(s => s.SupplierDomain)
+                .Where(s => s.SupplierType == supplierType)
+                .ToList();
+
+            if (results.Count == 0) return BadRequest();
+
+            return Ok(results);
+        }
+
+        [HttpGet("SupplierProducts")]
+        public ActionResult<IEnumerable<Supplier>> SupplierProducts(int supplierType)
+        {
+            var results = _dbContext.Product_Domain
+                .Include(s => s.SupplierDomain)
+                .Where(s => s.SupplierType == supplierType)
+                .ToList();
+
+            if (results.Count == 0) return BadRequest();
+
+            return Ok(results);
+        }
+
+
         [HttpPost]
         public async Task<IActionResult> PostSupplier(SupplierModel supp)
         {
@@ -45,7 +73,6 @@ namespace LSF.Controllers
             {
                 City = supp.City,
                 SupplierName = supp.SupplierName,
-                SupplierResponsible = supp.SupplierResponsible,
                 Phone = supp.Phone
             };
 
@@ -83,7 +110,6 @@ namespace LSF.Controllers
 
             suppExist.City = supp.City ?? suppExist.City;
             suppExist.SupplierName = supp.SupplierName ?? suppExist.SupplierName;
-            suppExist.SupplierResponsible = supp.SupplierResponsible ?? suppExist.SupplierResponsible;
             suppExist.Phone = supp.Phone ?? suppExist.Phone;
 
             _dbContext.Supplier.Update(suppExist);

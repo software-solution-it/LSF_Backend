@@ -49,6 +49,7 @@ namespace LSF.Data
         public DbSet<Supplier> Supplier { get; set; }
         public DbSet<Technician> Technician { get; set; }
         public DbSet<Inauguration> Inauguration { get; set; }
+        public DbSet<BotError> BotError { get; set; }
         public DbSet<UserGeolocation> User_Geolocation { get; set; }
         public DbSet<UserPoint> User_Point { get; set; }
         public DbSet<UserSupplier> User_Supplier { get; set; }

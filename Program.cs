@@ -72,7 +72,17 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-//app.MapGroup("default").MapIdentityApi<User>();
+//ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+//using (var scope = app.Services.CreateScope())
+//{
+//    var serviceProvider = scope.ServiceProvider;
+
+//    // Obtenha uma instância de ExcelService dentro do escopo
+//    var excelService = serviceProvider.GetRequiredService<ExcelService>();
+
+//    // Atualiza o banco de dados com os dados da planilha Excel
+//    excelService.AtualizarBancoDadosComPlanilhaExcelBotErros(@"C:\Users\gatob\Desktop\Gabriel\NovoLSF\BotError.xlsx");
+//}
 
 app.UseHttpsRedirection();
 

@@ -98,13 +98,13 @@ namespace LSF.Controllers
             try
             {
 
-                var userSupplier = new UserSupplier
+                var userSupplier = new UserTechnician
                 {
                     UserId = userId,
-                    SupplierId = technicianId
+                    TechnicianId = technicianId
                 };
 
-                await _dbContext.User_Supplier.AddAsync(userSupplier);
+                await _dbContext.User_Technician.AddAsync(userSupplier);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(userSupplier);

@@ -80,13 +80,38 @@ namespace LSF.Controllers
             try
             {
 
-                var result = await _dbContext.Supplier.AddAsync(newsupp);
-                await _dbContext.SaveChangesAsync();
+                //var result = await _dbContext.Supplier.AddAsync(newsupp);
+                //await _dbContext.SaveChangesAsync();
 
                 var userSupplier = new UserSupplier
                 {
                     UserId = userId,
                     SupplierId = newsupp?.Id
+                };
+
+                await _dbContext.User_Supplier.AddAsync(userSupplier);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(userSupplier);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
+            }
+        }
+
+        [HttpPost("UserSupplier")]
+        public async Task<IActionResult> UserSupplier(int supplierId)
+        {
+            var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
+
+            try
+            {
+
+                var userSupplier = new UserSupplier
+                {
+                    UserId = userId,
+                    SupplierId = supplierId
                 };
 
                 await _dbContext.User_Supplier.AddAsync(userSupplier);

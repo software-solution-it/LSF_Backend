@@ -8,7 +8,7 @@ namespace LSF.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class SupplierController : ControllerBase
     {
         private readonly APIDbContext _dbContext;
@@ -73,7 +73,8 @@ namespace LSF.Controllers
             {
                 City = supp.City,
                 SupplierName = supp.SupplierName,
-                Phone = supp.Phone
+                Phone = supp.Phone,
+                SupplierType = supp.SupplierType
             };
 
             try

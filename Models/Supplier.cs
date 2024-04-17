@@ -21,6 +21,7 @@ namespace LSF.Models
         public string City { get; set; }
         public string SupplierName { get; set; }
         public string Phone { get; set; }
+        public int SupplierType { get; set; }
 
     }
 }

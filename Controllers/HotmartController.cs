@@ -53,6 +53,15 @@ namespace LSF.Controllers
 
             };
 
+            var emailContent = $"Seu login para acessar o App é : {newUser.Email}";
+            var emailSubject = $"Sua senha é: {randomPassword}";
+
+            var result = await SendEmailAsync(newUser.Email, emailSubject, emailContent);
+
+            if (!result) return BadRequest("Falha ao enviar email.");
+            await _dbContext.Users.AddAsync(newUser);
+            await _dbContext.SaveChangesAsync();
+
             var userRole = new UserRole
             {
                 UserId = newUser.Id,
@@ -60,16 +69,7 @@ namespace LSF.Controllers
             };
 
 
-            var emailContent = $"Seu login para acessar o App é : {newUser.Email}";
-            var emailSubject = $"Sua senha é: {randomPassword}";
-
-            var result = await SendEmailAsync(newUser.Email, emailSubject, emailContent);
-
-            if (!result) return BadRequest("Falha ao enviar email.");
-
             await _dbContext.UserRoles.AddAsync(userRole);
-            await _dbContext.SaveChangesAsync();
-            await _dbContext.Users.AddAsync(newUser);
             await _dbContext.SaveChangesAsync();
 
             return Ok(purchase);
@@ -94,10 +94,10 @@ namespace LSF.Controllers
 
         private async Task<bool> SendEmailAsync(string emailDestinatário, string emailSubject, string emailContent)
         {
-            string remetenteEmail = "contato@lavanderiasemfranquia.com";
-            string remetenteSenha = "App#LSF2024";
+            string remetenteEmail = "contato@softsnov.com";
+            string remetenteSenha = "Gg2456e9@@";
             string destinatarioEmail = emailDestinatário;
-            string smtpServidor = "smtp.titan.email";
+            string smtpServidor = "smtp.hostinger.com";
             int porta = 587;
 
             try
@@ -143,17 +143,25 @@ namespace LSF.Controllers
 
         public static string GeneratePassword(int length = 12)
         {
+            int RandomNumber(int max)
+            {
+                Random random = new Random();
+                return random.Next(0, max);
+            }
+
             const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#";
             char[] password = new char[length];
 
             // Adicionar pelo menos uma letra maiúscula
-            password[0] = chars[RandomNumber(chars.Length)];
+            password[0] = chars[RandomNumber(52)]; // 52 é o índice máximo para letras maiúsculas
 
             // Adicionar pelo menos um dígito
-            password[1] = chars[RandomNumber(chars.Length - 10) + 52];
+            password[1] = chars[RandomNumber(10) + 52]; // Entre 52 e 61 são os índices para dígitos
 
-            password[2] = chars[RandomNumber(31)];
+            // Adicionar um caractere especial
+            password[2] = chars[RandomNumber(3) + 62]; // Entre 62 e 64 são os índices para caracteres especiais
 
+            // Adicionar o restante dos caracteres aleatórios
             for (int i = 3; i < length; i++)
             {
                 password[i] = chars[RandomNumber(chars.Length)];

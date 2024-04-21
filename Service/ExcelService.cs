@@ -131,4 +131,52 @@
 //            _dbContext.SaveChanges();
 //        }
 //    }
+
+//    public void AtualizarBancoDadosComPlanilhaExcelBotErros(string caminhoPlanilha)
+//    {
+//        using (var package = new ExcelPackage(new FileInfo(caminhoPlanilha)))
+//        {
+//            ExcelWorksheet worksheet = package.Workbook.Worksheets[1]; // Supondo que a planilha está na primeira guia
+
+//            int linhaInicial = 1; // Supondo que a primeira linha contém cabeçalhos e os dados começam na segunda linha
+
+//            int totalLinhas = worksheet.Dimension.Rows;
+
+//            for (int linha = linhaInicial; linha <= totalLinhas; linha++)
+//            {
+//                // Ler os dados da planilha
+//                int id = linha - 1;
+//                string visor = worksheet.Cells[linha, 1].Value?.ToString(); // Supondo que o nome está na segunda coluna
+//                string description = worksheet.Cells[linha, 2].Value?.ToString(); // Supondo que o nome está na segunda coluna
+//                string cause = worksheet.Cells[linha, 3].Value?.ToString(); // Supondo que o nome está na segunda coluna
+
+//                // Procurar o registro no banco de dados
+//                var bot = _dbContext.BotError.FirstOrDefault(t => t.Id == id);
+
+//                // Atualizar os dados do técnico, se necessário
+//                if (bot == null)
+//                {
+//                    bot = new BotError
+//                    {
+//                        //Id = id,
+//                        Visor = visor ?? "",
+//                        Description = description,
+//                        Cause = cause
+//                        // Defina outras propriedades conforme necessário
+//                    };
+
+//                    _dbContext.BotError.Add(bot);
+//                }
+//                else
+//                {
+//                    //bot.Id = id;
+//                    bot.Visor = visor ?? "";
+//                    bot.Description = description ?? "";
+//                    bot.Cause = cause ?? "";
+//                }
+//            }
+
+//            _dbContext.SaveChanges();
+//        }
+//    }
 //}

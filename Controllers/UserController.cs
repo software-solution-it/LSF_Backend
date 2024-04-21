@@ -24,7 +24,7 @@ namespace LSF.Controllers
     {
         private readonly APIDbContext _dbContext;
         private readonly IConfiguration _config;
-        private readonly Random _random = new Random();
+        private Random _random = new Random();
         private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 
         public UserController(APIDbContext dbContext, IConfiguration config)
@@ -153,16 +153,16 @@ namespace LSF.Controllers
             }
         }
 
-        public static string GeneratePassword(int length = 12)
+        private string GeneratePassword(int length = 12)
         {
             const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#";
             char[] password = new char[length];
 
-            password[0] = chars[RandomNumber(26)]; 
+            password[0] = chars[_random.Next(26, 52)];
 
-            password[1] = chars[RandomNumber(10) + 52];
+            password[1] = chars[_random.Next(52, 62)];
 
-            password[2] = chars[RandomNumber(31)];
+            password[2] = chars[_random.Next(62)];
 
             for (int i = 3; i < length; i++)
             {
@@ -215,6 +215,8 @@ namespace LSF.Controllers
                                              from us in usGroup.DefaultIfEmpty()
                                              join ut in _dbContext.User_Technician on u.Id equals ut.UserId into utGroup
                                              from ut in utGroup.DefaultIfEmpty()
+                                             join ux in _dbContext.User_Inauguration on u.Id equals ux.UserId into uxGroup
+                                             from ux in uxGroup.DefaultIfEmpty()
                                              join g in _dbContext.Geolocation on ug.GeolocationId equals g.Id into gGroup
                                              from g in gGroup.DefaultIfEmpty()
                                              join p in _dbContext.Point on up.PointId equals p.Id into pGroup
@@ -223,6 +225,8 @@ namespace LSF.Controllers
                                              from s in sGroup.DefaultIfEmpty()
                                              join t in _dbContext.Technician on ut.TechnicianId equals t.Id into tGroup
                                              from t in tGroup.DefaultIfEmpty()
+                                             join x in _dbContext.Inauguration on ux.InaugurationId equals x.Id into xGroup
+                                             from x in xGroup.DefaultIfEmpty()
                                              select new
                                              {
                                                  User = new
@@ -238,7 +242,8 @@ namespace LSF.Controllers
                                                  Geolocation = g,
                                                  Point = p,
                                                  Supplier = s,
-                                                 Technician = t
+                                                 Technician = t,
+                                                 Inauguration = x
                                              }).FirstOrDefaultAsync();
 
 
@@ -315,10 +320,10 @@ namespace LSF.Controllers
 
         private async Task<bool> SendEmailAsync(string emailDestinatário, string emailSubject, string emailContent)
         {
-            string remetenteEmail = "contato@lavanderiasemfranquia.com";
-            string remetenteSenha = "App#LSF2024";
+            string remetenteEmail = "suporte@faculdadedalavanderia.com.br";
+            string remetenteSenha = "Lavanderiaprojeto#1";
             string destinatarioEmail = emailDestinatário;
-            string smtpServidor = "smtp.titan.email";
+            string smtpServidor = "smtp.hostinger.com";
             int porta = 587;
 
             try
@@ -356,6 +361,26 @@ namespace LSF.Controllers
             {
                 return false;
             }
+
+            return true;
+        }
+
+        [HttpPost("UserProduct")]
+        public async Task<bool> UserProduct(int supplierType, int productId, int quantity)
+        {
+            var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
+
+            var result = new UserProduct
+            {
+                Quantity = quantity,
+                UserId = userId,
+                ProductId = productId,
+                SupplierType = supplierType
+            };
+
+            _dbContext.User_Product.Add(result);
+
+            await _dbContext.SaveChangesAsync();
 
             return true;
         }
@@ -429,6 +454,7 @@ namespace LSF.Controllers
                                                  u.Phone,
                                                  u.Email,
                                                  u.UserImage,
+                                                 u.Receipt,
                                                  u.ReceiptConfirmed
                                              },
                                              Geolocation = g,
@@ -449,11 +475,9 @@ namespace LSF.Controllers
         public async Task<IActionResult> Put(int id, UserModel updatedUser)
         {
             var existingUser = await _dbContext.Users.FindAsync(id);
-            if (existingUser == null)
-            {
-                return NotFound("Usuário não encontrado");
-            }
 
+            if (existingUser == null) return NotFound("Usuário não encontrado");
+            
             existingUser.Email = updatedUser.Email ?? existingUser.Email;
             existingUser.Password = updatedUser.Password ?? existingUser.Password;
             existingUser.UserImage = updatedUser.UserImage ?? existingUser.UserImage;

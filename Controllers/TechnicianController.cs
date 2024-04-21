@@ -53,41 +53,61 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostTechnician(TechnicianModel tech)
+        public async Task<IActionResult> PostTechnician(int techId)
         {
-            if (tech == null)
-            {
-                return BadRequest("Dados do técnico inválidos");
-            }
-
             var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
-            var newTech = new Technician
-            {
-                Name = tech.Name,
-                Email = tech.Email,
-                Phone = tech.Phone,
-                City = tech.City,
-                Country = tech.Country,
-                Active = (bool) tech.Active
-            };
+            //var newTech = new Technician
+            //{
+            //    Name = tech.Name,
+            //    Email = tech.Email,
+            //    Phone = tech.Phone,
+            //    City = tech.City,
+            //    Country = tech.Country,
+            //    Active = (bool) tech.Active
+            //};
 
             try
             {
 
-                var result = await _dbContext.Technician.AddAsync(newTech);
-                await _dbContext.SaveChangesAsync();
+                //var result = await _dbContext.Technician.AddAsync(newTech);
+                //await _dbContext.SaveChangesAsync();
 
                 var userTechnician = new UserTechnician
                 {
                     UserId = userId,
-                    TechnicianId = newTech?.Id
+                    TechnicianId = techId
                 };
 
                 await _dbContext.User_Technician.AddAsync(userTechnician);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(userTechnician);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
+            }
+        }
+
+        [HttpPost("UserTechnician")]
+        public async Task<IActionResult> UserTechnician(int technicianId)
+        {
+            var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
+
+            try
+            {
+
+                var userSupplier = new UserTechnician
+                {
+                    UserId = userId,
+                    TechnicianId = technicianId
+                };
+
+                await _dbContext.User_Technician.AddAsync(userSupplier);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(userSupplier);
             }
             catch (Exception ex)
             {

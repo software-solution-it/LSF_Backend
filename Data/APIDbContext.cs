@@ -61,5 +61,6 @@ namespace LSF.Data
         public DbSet<UserInauguration> User_Inauguration { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<SalesReport> SalesReport { get; set; }
     }
 }

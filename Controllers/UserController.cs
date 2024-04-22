@@ -37,13 +37,15 @@ namespace LSF.Controllers
         public async Task<IActionResult> Login(string email, string password)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            
 
-            var user = await _dbContext.Users
-                .Where(u => u.Email == email)
-                .Join(_dbContext.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { User = u, UserRole = ur })
-                .Join(_dbContext.Roles, ur => ur.UserRole.RoleId, r => r.Id, (ur, r) => new { User = ur.User, Role = r })
-                .FirstOrDefaultAsync();
+
+            var user = await (
+                from u in _dbContext.Users
+                join ur in _dbContext.UserRoles on u.Id equals ur.UserId
+                join r in _dbContext.Roles on ur.RoleId equals r.Id
+                where u.Email == email
+                select new { User = u, Role = r }
+            ).FirstOrDefaultAsync();
 
             if (user == null) return Unauthorized("Usuário não encontrado");
 

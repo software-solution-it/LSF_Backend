@@ -14,6 +14,9 @@ namespace LSF.Models
         public int? SupplierType { get; set; }
         public virtual SupplierDomain? SupplierDomain { get; set; }
 
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+
     }
 
     public class SupplierModel

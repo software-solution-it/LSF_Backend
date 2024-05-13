@@ -9,6 +9,8 @@ namespace LSF.Models
         public string? ProductName { get; set; }
         public string? ProductBrand { get; set; }
         public int? WasherType { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
         [ForeignKey("SupplierDomain")]
         public int? SupplierType { get; set; }

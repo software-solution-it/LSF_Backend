@@ -18,8 +18,8 @@ namespace LSF.Models
         public byte[]? UserImage { get; set; }
         public int? RecoveryCode { get; set; }
         public int? ReceiptConfirmed { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public virtual ICollection<UserRole>? UserRoles { get; set; }
     }
 

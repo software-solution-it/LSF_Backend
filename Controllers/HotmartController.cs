@@ -31,48 +31,56 @@ namespace LSF.Controllers
         [HttpPost("/hotmart/purchase")]
         public async Task<IActionResult> PostPurchase([FromBody] PurchaseObject purchase)
         {
-            if (purchase.Data.Buyer == null) return BadRequest("Purchase não encontrado");
-
-            var t = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == purchase.Data.Buyer.Email);
-
-            if (t != null) return BadRequest("Email ja cadastrado!");
-
-            var newBuyer = purchase.Data.Buyer;
-
-            var randomCharts = GenerateRandomChars();
-            var randomPassword = GeneratePassword();
-            var hashedPassword = HashPassword(randomPassword);
-
-            var newUser = new User
+            try
             {
-                Name = newBuyer.Name,
-                UserName = $"{newBuyer.Name}_{randomCharts}",
-                Email = newBuyer.Email,
-                Phone = newBuyer.CheckoutPhone ?? "",
-                Password = hashedPassword
+                if (purchase.Data.Buyer == null) return BadRequest("Purchase não encontrado");
 
-            };
+                var t = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == purchase.Data.Buyer.Email);
 
-            var emailContent = $"Seu login para acessar o App é : {newUser.Email}";
-            var emailSubject = $"Sua senha é: {randomPassword}";
+                if (t != null) return BadRequest("Email ja cadastrado!");
 
-            var result = await SendEmailAsync(newUser.Email, emailSubject, emailContent);
+                var newBuyer = purchase.Data.Buyer;
 
-            if (!result) return BadRequest("Falha ao enviar email.");
-            await _dbContext.Users.AddAsync(newUser);
-            await _dbContext.SaveChangesAsync();
+                var randomCharts = GenerateRandomChars();
+                var randomPassword = GeneratePassword();
+                var hashedPassword = HashPassword(randomPassword);
 
-            var userRole = new UserRole
+                var newUser = new User
+                {
+                    Name = newBuyer.Name,
+                    UserName = $"{newBuyer.Name}_{randomCharts}",
+                    Email = newBuyer.Email,
+                    Phone = newBuyer.CheckoutPhone ?? "",
+                    Password = hashedPassword
+
+                };
+
+                var emailContent = $"Seu login para acessar o App é : {newUser.Email}";
+                var emailSubject = $"Sua senha é: {randomPassword}";
+
+                var result = await SendEmailAsync(newUser.Email, emailSubject, emailContent);
+
+                if (!result) return BadRequest("Falha ao enviar email.");
+                await _dbContext.Users.AddAsync(newUser);
+                await _dbContext.SaveChangesAsync();
+
+
+                var userRole = new UserRole
+                {
+                    UserId = newUser.Id,
+                    RoleId = 2
+                };
+
+
+                await _dbContext.UserRoles.AddAsync(userRole);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(purchase);
+            }catch (Exception ex)
             {
-                UserId = newUser.Id,
-                RoleId = 2
-            };
-
-
-            await _dbContext.UserRoles.AddAsync(userRole);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(purchase);
+                Console.WriteLine($"Ocorreu um erro: {ex.Message}");
+                return StatusCode(500, "Ocorreu um erro ao processar sua solicitação.");
+            }
         }
 
         private string HashPassword(string password)

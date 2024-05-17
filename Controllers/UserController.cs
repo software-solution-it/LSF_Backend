@@ -238,8 +238,7 @@ namespace LSF.Controllers
                                                      u.Email,
                                                      u.UserImage,
                                                      u.ReceiptConfirmed,
-                                                     u.CreatedAt,
-                                                     u.UpdatedAt
+                                                     u.CreatedAt
                                                  },
                                                  Geolocation = g,
                                                  Point = p,

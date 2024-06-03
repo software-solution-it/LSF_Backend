@@ -227,6 +227,7 @@ namespace LSF.Controllers
                                              from t in tGroup.DefaultIfEmpty()
                                              join x in _dbContext.Inauguration on ux.InaugurationId equals x.Id into xGroup
                                              from x in xGroup.DefaultIfEmpty()
+                                             orderby us.SupplierId descending // Ordena pelo SupplierId em ordem decrescente
                                              select new
                                              {
                                                  User = new
@@ -246,10 +247,6 @@ namespace LSF.Controllers
                                                  Technician = t,
                                                  Inauguration = x
                                              }).FirstOrDefaultAsync();
-
-
-
-
 
                 await _dbContext.SaveChangesAsync();
 

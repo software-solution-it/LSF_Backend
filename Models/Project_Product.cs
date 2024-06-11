@@ -3,14 +3,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LSF.Models
 {
-    public class UserProduct
+    public class ProjectProduct
     {
         public int Id { get; set; }
         public int? Quantity { get; set; }
 
-        [ForeignKey("User")]
-        public int? UserId { get; set; }
-        public virtual User? User { get; set; }
+        public int? ProjectId { get; set; }
 
         [ForeignKey("ProductDomain")]
         public int? ProductId { get; set; }

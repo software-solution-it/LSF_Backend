@@ -2,11 +2,12 @@
 using LSF.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 
 namespace LSF.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [Authorize]
     public class SupplierController : ControllerBase
@@ -53,19 +54,26 @@ namespace LSF.Controllers
         [HttpGet("SupplierProducts")]
         public ActionResult<IEnumerable<Supplier>> SupplierProducts(int supplierType)
         {
-            var results = _dbContext.Product_Domain
-                .Include(s => s.SupplierDomain)
-                .Where(s => s.SupplierType == supplierType)
-                .ToList();
+            try
+            {
+                var results = _dbContext.Product_Domain
+                    .Include(s => s.SupplierDomain)
+                    .Where(s => s.SupplierType == supplierType)
+                    .ToList();
 
-            if (results.Count == 0) return BadRequest();
+                if (results.Count == 0) return BadRequest();
 
-            return Ok(results);
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
+            }
         }
 
 
         [HttpPost]
-        public async Task<IActionResult> PostSupplier(SupplierModel supp)
+        public async Task<IActionResult> PostSupplier(SupplierModel supp, int projectId)
         {
             var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
@@ -83,16 +91,15 @@ namespace LSF.Controllers
                 //var result = await _dbContext.Supplier.AddAsync(newsupp);
                 //await _dbContext.SaveChangesAsync();
 
-                var userSupplier = new UserSupplier
+                var projectSupplier = new ProjectSupplier
                 {
-                    UserId = userId,
                     SupplierId = newsupp?.Id
                 };
 
-                await _dbContext.User_Supplier.AddAsync(userSupplier);
+                await _dbContext.Project_Supplier.AddAsync(projectSupplier);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(userSupplier);
+                return Ok(projectSupplier);
             }
             catch (Exception ex)
             {
@@ -101,23 +108,32 @@ namespace LSF.Controllers
         }
 
         [HttpPost("UserSupplier")]
-        public async Task<IActionResult> UserSupplier(int supplierId)
+        public async Task<IActionResult> UserSupplier(int supplierId, int projectId)
         {
             var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
             try
             {
 
-                var userSupplier = new UserSupplier
+                var project = await _dbContext.Project
+                              .FirstOrDefaultAsync(p => p.Id == projectId && p.userId == userId);
+
+                if (project == null)
                 {
-                    UserId = userId,
+                    return Unauthorized("O usuário não está associado a este projeto.");
+                }
+
+
+                var projectSupplier = new ProjectSupplier
+                {
+                    ProjectId = projectId,
                     SupplierId = supplierId
                 };
 
-                await _dbContext.User_Supplier.AddAsync(userSupplier);
+                await _dbContext.Project_Supplier.AddAsync(projectSupplier);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(userSupplier);
+                return Ok(projectSupplier);
             }
             catch (Exception ex)
             {

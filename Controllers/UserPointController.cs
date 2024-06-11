@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LSF.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [ApiExplorerSettings(IgnoreApi = true)]
     public class UserPointController : ControllerBase
@@ -19,15 +19,15 @@ namespace LSF.Controllers
         }
 
         [HttpGet]
-        public IEnumerable<UserPoint> Get()
+        public IEnumerable<ProjectPoint> Get()
         {
-            return _dbContext.User_Point.ToList();
+            return _dbContext.Project_Point.ToList();
         }
 
         [HttpGet("{id}")]
-        public ActionResult<UserPoint> Get(int id)
+        public ActionResult<ProjectPoint> Get(int id)
         {
-            var userGeo = _dbContext.User_Point.FirstOrDefault(t => t.Id == id);
+            var userGeo = _dbContext.Project_Point.FirstOrDefault(t => t.Id == id);
 
             if (userGeo == null)
             {
@@ -38,9 +38,9 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateUserPoint(UserPointModel model)
+        public async Task<IActionResult> CreateUserPoint(ProjectPointModel model, int projectId)
         {
-            var user = await _dbContext.Users.FindAsync(model.UserId);
+            var user = await _dbContext.Users.FindAsync(model.ProjectId);
             if (user == null)
             {
                 return NotFound("Usuário não encontrado.");
@@ -52,31 +52,31 @@ namespace LSF.Controllers
                 return NotFound("Geolocalização não encontrada.");
             }
 
-            var UserPoint = new UserPoint
+            var UserPoint = new ProjectPoint
             {
-                UserId = model.UserId,
+                ProjectId = model.ProjectId,
                 PointId = model.PointId
             };
 
-            _dbContext.User_Point.Add(UserPoint);
+            _dbContext.Project_Point.Add(UserPoint);
             await _dbContext.SaveChangesAsync();
 
             return Ok("Relacionamento usuário-geolocalização criado com sucesso.");
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, UserPointModel model)
+        public async Task<IActionResult> Put(int id, ProjectPointModel model, int projectId)
         {
-            var userGeo = await _dbContext.User_Point.FindAsync(id);
+            var userGeo = await _dbContext.Project_Point.FindAsync(id);
             if (userGeo == null)
             {
                 return NotFound("Relacionamento usuário-geolocalização não encontrado.");
             }
 
-            userGeo.UserId = model.UserId;
+            userGeo.ProjectId = model.ProjectId;
             userGeo.PointId = model.PointId;
 
-            _dbContext.User_Point.Update(userGeo);
+            _dbContext.Project_Point.Update(userGeo);
             await _dbContext.SaveChangesAsync();
 
             return Ok("Relacionamento usuário-geolocalização atualizado com sucesso.");
@@ -85,13 +85,13 @@ namespace LSF.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var userGeo = await _dbContext.User_Point.FindAsync(id);
+            var userGeo = await _dbContext.Project_Point.FindAsync(id);
             if (userGeo == null)
             {
                 return NotFound("Relacionamento usuário-geolocalização não encontrado.");
             }
 
-            _dbContext.User_Point.Remove(userGeo);
+            _dbContext.Project_Point.Remove(userGeo);
             await _dbContext.SaveChangesAsync();
 
             return Ok("Relacionamento usuário-geolocalização excluído com sucesso.");

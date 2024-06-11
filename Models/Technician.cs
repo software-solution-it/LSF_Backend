@@ -19,5 +19,7 @@
         public string? City { get; set; }
         public string? Country { get; set; }
         public bool? Active { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

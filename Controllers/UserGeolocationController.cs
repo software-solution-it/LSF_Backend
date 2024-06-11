@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LSF.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [ApiExplorerSettings(IgnoreApi = true)]
     public class UserGeolocationController : ControllerBase
@@ -18,18 +18,16 @@ namespace LSF.Controllers
             _dbContext = dbContext;
         }
 
-        // GET: api/<UserGeolocationController>
         [HttpGet]
-        public IEnumerable<UserGeolocation> Get()
+        public IEnumerable<ProjectGeolocation> Get()
         {
-            return _dbContext.User_Geolocation.ToList();
+            return _dbContext.Project_Geolocation.ToList();
         }
 
-        // GET api/<UserGeolocationController>/5
         [HttpGet("{id}")]
-        public ActionResult<UserGeolocation> Get(int id)
+        public ActionResult<ProjectGeolocation> Get(int id)
         {
-            var userGeo = _dbContext.User_Geolocation.FirstOrDefault(t => t.Id == id);
+            var userGeo = _dbContext.Project_Geolocation.FirstOrDefault(t => t.Id == id);
 
             if (userGeo == null)
             {
@@ -40,9 +38,9 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateUserGeolocation(UserGeolocationModel model)
+        public async Task<IActionResult> CreateUserGeolocation(ProjectGeolocationModel model)
         {
-            var user = await _dbContext.Users.FindAsync(model.UserId);
+            var user = await _dbContext.Users.FindAsync(model.ProjectId);
             if (user == null)
             {
                 return NotFound("Usuário não encontrado.");
@@ -54,31 +52,31 @@ namespace LSF.Controllers
                 return NotFound("Geolocalização não encontrada.");
             }
 
-            var userGeolocation = new UserGeolocation
+            var userGeolocation = new ProjectGeolocation
             {
-                UserId = model.UserId,
+                ProjectId = model.ProjectId,
                 GeolocationId = model.GeolocationId
             };
 
-            _dbContext.User_Geolocation.Add(userGeolocation);
+            _dbContext.Project_Geolocation.Add(userGeolocation);
             await _dbContext.SaveChangesAsync();
 
             return Ok("Relacionamento usuário-geolocalização criado com sucesso.");
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, UserGeolocationModel model)
+        public async Task<IActionResult> Put(int id, ProjectGeolocationModel model, int projectId)
         {
-            var userGeo = await _dbContext.User_Geolocation.FindAsync(id);
+            var userGeo = await _dbContext.Project_Geolocation.FindAsync(id);
             if (userGeo == null)
             {
                 return NotFound("Relacionamento usuário-geolocalização não encontrado.");
             }
 
-            userGeo.UserId = model.UserId;
+            userGeo.ProjectId = model.ProjectId;
             userGeo.GeolocationId = model.GeolocationId;
 
-            _dbContext.User_Geolocation.Update(userGeo);
+            _dbContext.Project_Geolocation.Update(userGeo);
             await _dbContext.SaveChangesAsync();
 
             return Ok("Relacionamento usuário-geolocalização atualizado com sucesso.");
@@ -87,13 +85,13 @@ namespace LSF.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var userGeo = await _dbContext.User_Geolocation.FindAsync(id);
+            var userGeo = await _dbContext.Project_Geolocation.FindAsync(id);
             if (userGeo == null)
             {
                 return NotFound("Relacionamento usuário-geolocalização não encontrado.");
             }
 
-            _dbContext.User_Geolocation.Remove(userGeo);
+            _dbContext.Project_Geolocation.Remove(userGeo);
             await _dbContext.SaveChangesAsync();
 
             return Ok("Relacionamento usuário-geolocalização excluído com sucesso.");

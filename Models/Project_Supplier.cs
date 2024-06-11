@@ -3,22 +3,20 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LSF.Models
 {
-    public class UserSupplier
+    public class ProjectSupplier
     {
         public int Id { get; set; }
 
-        [ForeignKey("User")]
-        public int UserId { get; set; }
-        public virtual User? User { get; set; }
+        public int ProjectId { get; set; }
 
         [ForeignKey("Supplier")]
         public int? SupplierId { get; set; }
         public virtual Supplier? Supplier { get; set; }
     }
 
-    public class UserSupplierModel
+    public class ProjectSupplierModel
     {
-        public int UserId { get; set; }
+        public int ProjectId { get; set; }
         public int SupplierId { get; set; }
     }
 }

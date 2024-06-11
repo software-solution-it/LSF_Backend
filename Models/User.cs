@@ -14,10 +14,9 @@ namespace LSF.Models
 
         public string? Email { get; set; }
         public string? Password { get; set; }
-        public byte[]? Receipt { get; set; }
         public byte[]? UserImage { get; set; }
+        public virtual ICollection<Project>? Projects { get; set; }
         public int? RecoveryCode { get; set; }
-        public int? ReceiptConfirmed { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public virtual ICollection<UserRole>? UserRoles { get; set; }
     }
@@ -31,8 +30,6 @@ namespace LSF.Models
         public string? Phone { get; set; }
         public string? Email { get; set; }
         public string? Password { get; set; }
-        public byte[]? Receipt { get; set; }
-        public int? ReceiptConfirmed { get; set; }
         public byte[]? UserImage { get; set; }
     }
 

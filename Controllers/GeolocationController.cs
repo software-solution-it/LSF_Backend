@@ -2,11 +2,12 @@
 using LSF.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Numerics;
 
 namespace LSF.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [Authorize]
     public class GeolocationController : ControllerBase
@@ -36,44 +37,47 @@ namespace LSF.Controllers
 
             return geo;
         }
-
         [HttpPost]
-        public async Task<IActionResult> PostGeolocalizacao(GeolocationModel geo)
+        public async Task<IActionResult> PostGeolocalizacao(GeolocationModel geo, int projectId)
         {
             if (geo == null)
             {
                 return BadRequest("Dados do Geolocation inválidos");
             }
 
-            var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
-
-
-
-            if (userId == null)
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+            if (!Int32.TryParse(userIdClaim, out int userId))
             {
                 return Unauthorized("Não foi possível obter o ID do usuário do token.");
             }
 
-            var newgeo = new Geolocation
-            {
-                Latitude = geo.Latitude,
-                Longitude = geo.Longitude,
-                Address = geo.Address,
-            };
-
             try
             {
+                var project = await _dbContext.Project
+                                              .FirstOrDefaultAsync(p => p.Id == projectId && p.userId == userId);
+
+                if (project == null)
+                {
+                    return Unauthorized("O usuário não está associado a este projeto.");
+                }
+
+                var newgeo = new Geolocation
+                {
+                    Latitude = geo.Latitude,
+                    Longitude = geo.Longitude,
+                    Address = geo.Address,
+                };
 
                 var result = await _dbContext.Geolocation.AddAsync(newgeo);
                 await _dbContext.SaveChangesAsync();
 
-                var userGeo = new UserGeolocation
+                var userProject = new ProjectGeolocation
                 {
-                    UserId = userId,
-                    GeolocationId = newgeo?.Id
+                    ProjectId = projectId,
+                    GeolocationId = newgeo.Id
                 };
 
-                await _dbContext.User_Geolocation.AddAsync(userGeo);
+                await _dbContext.Project_Geolocation.AddAsync(userProject);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(newgeo);

@@ -2,10 +2,11 @@
 using LSF.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LSF.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [Authorize]
     public class PointController : ControllerBase
@@ -37,7 +38,7 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostPoint(PointModel point)
+        public async Task<IActionResult> PostPoint(PointModel point, int projectId)
         {
             if (point == null)
             {
@@ -55,16 +56,24 @@ namespace LSF.Controllers
             try
             {
 
+                var project = await _dbContext.Project
+                              .FirstOrDefaultAsync(p => p.Id == projectId && p.userId == userId);
+
+                if (project == null)
+                {
+                    return Unauthorized("O usuário não está associado a este projeto.");
+                }
+
                 var result = await _dbContext.Point.AddAsync(newpoint);
                 await _dbContext.SaveChangesAsync();
 
-                var userPoint = new UserPoint
+                var userPoint = new ProjectPoint
                 {
-                    UserId = userId,
+                    ProjectId = projectId,
                     PointId = newpoint?.Id
                 };
 
-                await _dbContext.User_Point.AddAsync(userPoint);
+                await _dbContext.Project_Point.AddAsync(userPoint);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(userPoint);

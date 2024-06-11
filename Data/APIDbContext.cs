@@ -9,7 +9,6 @@ namespace LSF.Data
     {
         public APIDbContext(DbContextOptions<APIDbContext> options) : base(options)
         {
-
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -24,12 +23,6 @@ namespace LSF.Data
 
             modelBuilder.Entity<UserRole>().ToTable("UserRoles");
             modelBuilder.Entity<UserRole>().HasKey(ur => new { ur.UserId, ur.RoleId });
-            modelBuilder.Entity<UserRole>().HasOne(ur => ur.User)
-                .WithMany(u => u.UserRoles)
-                .HasForeignKey(ur => ur.UserId);
-            modelBuilder.Entity<UserRole>().HasOne(ur => ur.Role)
-                .WithMany(r => r.UserRoles)
-                .HasForeignKey(ur => ur.RoleId);
 
             modelBuilder.Entity<Role>().HasData(
                 new Role { Id = 1, Name = "Admin" },
@@ -41,7 +34,7 @@ namespace LSF.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseLazyLoadingProxies();
+           // optionsBuilder.UseLazyLoadingProxies();
         }
 
         public DbSet<User> Users { get; set; }
@@ -49,17 +42,20 @@ namespace LSF.Data
         public DbSet<Point> Point { get; set; }
         public DbSet<Supplier> Supplier { get; set; }
         public DbSet<Technician> Technician { get; set; }
-        public DbSet<Inauguration> Inauguration { get; set; }
+        public DbSet<Project> Project { get; set; }
         public DbSet<BotError> BotError { get; set; }
         public DbSet<ProductDomain> Product_Domain { get; set; }
         public DbSet<SupplierDomain> Supplier_Domain { get; set; }
-        public DbSet<UserProduct> User_Product { get; set; }
-        public DbSet<UserGeolocation> User_Geolocation { get; set; }
-        public DbSet<UserPoint> User_Point { get; set; }
-        public DbSet<UserSupplier> User_Supplier { get; set; }
-        public DbSet<UserTechnician> User_Technician { get; set; }
-        public DbSet<UserInauguration> User_Inauguration { get; set; }
+        public DbSet<ProjectProduct> Project_Product { get; set; }
+        public DbSet<ProjectGeolocation> Project_Geolocation { get; set; }
+        public DbSet<ProjectPoint> Project_Point { get; set; }
+        public DbSet<ProjectSupplier> Project_Supplier { get; set; }
+        public DbSet<ProjectTechnician> Project_Technician { get; set; }
+        public DbSet<ProjectElectric> Project_Electric { get; set; }
+        public DbSet<ProjectFile> Project_File { get; set; }
+        public DbSet<FileModel> FileModel { get; set; }
         public DbSet<Role> Roles { get; set; }
+        public DbSet<Mandala> Mandala { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
         public DbSet<SalesReport> SalesReport { get; set; }
     }

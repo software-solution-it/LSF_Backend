@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LSF.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [Authorize]
     public class TechnicianController : ControllerBase
@@ -53,7 +53,7 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostTechnician(int techId)
+        public async Task<IActionResult> PostTechnician(int techId, int projectId)
         {
             var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
@@ -73,13 +73,21 @@ namespace LSF.Controllers
                 //var result = await _dbContext.Technician.AddAsync(newTech);
                 //await _dbContext.SaveChangesAsync();
 
-                var userTechnician = new UserTechnician
+                var project = await _dbContext.Project
+                              .FirstOrDefaultAsync(p => p.Id == projectId && p.userId == userId);
+
+                if (project == null)
                 {
-                    UserId = userId,
+                    return Unauthorized("O usuário não está associado a este projeto.");
+                }
+
+                var userTechnician = new ProjectTechnician
+                {
+                    ProjectId = projectId,
                     TechnicianId = techId
                 };
 
-                await _dbContext.User_Technician.AddAsync(userTechnician);
+                await _dbContext.Project_Technician.AddAsync(userTechnician);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(userTechnician);
@@ -91,20 +99,20 @@ namespace LSF.Controllers
         }
 
         [HttpPost("UserTechnician")]
-        public async Task<IActionResult> UserTechnician(int technicianId)
+        public async Task<IActionResult> UserTechnician(int technicianId, int projectId)
         {
             var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
             try
             {
 
-                var userSupplier = new UserTechnician
+                var userSupplier = new ProjectTechnician
                 {
-                    UserId = userId,
+                    ProjectId = projectId,
                     TechnicianId = technicianId
                 };
 
-                await _dbContext.User_Technician.AddAsync(userSupplier);
+                await _dbContext.Project_Technician.AddAsync(userSupplier);
                 await _dbContext.SaveChangesAsync();
 
                 return Ok(userSupplier);

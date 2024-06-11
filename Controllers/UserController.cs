@@ -153,27 +153,6 @@ namespace LSF.Controllers
             }
         }
 
-        private string GeneratePassword(int length = 12)
-        {
-            const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#";
-            char[] password = new char[length];
-
-            password[0] = chars[_random.Next(26, 52)];
-
-            password[1] = chars[_random.Next(52, 62)];
-
-            password[2] = chars[_random.Next(62)];
-
-            for (int i = 3; i < length; i++)
-            {
-                password[i] = chars[RandomNumber(chars.Length)];
-            }
-
-            Shuffle(password);
-
-            return new string(password);
-        }
-
         private static int RandomNumber(int maxValue)
         {
             byte[] randomNumber = new byte[1];
@@ -196,68 +175,110 @@ namespace LSF.Controllers
                 array[k] = temp;
             }
         }
-
         [HttpPost("Customer")]
         [Authorize]
         public async Task<IActionResult> Customer()
         {
             try
             {
-                var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "userId");
+                if (userIdClaim == null)
+                {
+                    return BadRequest("Claim 'userId' não encontrada.");
+                }
 
-                var userWithDetails = await (from u in _dbContext.Users
-                                             where u.Id == userId
-                                             join ug in _dbContext.User_Geolocation on u.Id equals ug.UserId into ugGroup
-                                             from ug in ugGroup.DefaultIfEmpty()
-                                             join up in _dbContext.User_Point on u.Id equals up.UserId into upGroup
-                                             from up in upGroup.DefaultIfEmpty()
-                                             join us in _dbContext.User_Supplier on u.Id equals us.UserId into usGroup
-                                             from us in usGroup.DefaultIfEmpty()
-                                             join ut in _dbContext.User_Technician on u.Id equals ut.UserId into utGroup
-                                             from ut in utGroup.DefaultIfEmpty()
-                                             join ux in _dbContext.User_Inauguration on u.Id equals ux.UserId into uxGroup
-                                             from ux in uxGroup.DefaultIfEmpty()
-                                             join g in _dbContext.Geolocation on ug.GeolocationId equals g.Id into gGroup
-                                             from g in gGroup.DefaultIfEmpty()
-                                             join p in _dbContext.Point on up.PointId equals p.Id into pGroup
-                                             from p in pGroup.DefaultIfEmpty()
-                                             join s in _dbContext.Supplier on us.SupplierId equals s.Id into sGroup
-                                             from s in sGroup.DefaultIfEmpty()
-                                             join t in _dbContext.Technician on ut.TechnicianId equals t.Id into tGroup
-                                             from t in tGroup.DefaultIfEmpty()
-                                             join x in _dbContext.Inauguration on ux.InaugurationId equals x.Id into xGroup
-                                             from x in xGroup.DefaultIfEmpty()
-                                             select new
-                                             {
-                                                 User = new
-                                                 {
-                                                     u.Id,
-                                                     u.Name,
-                                                     u.UserName,
-                                                     u.Phone,
-                                                     u.Email,
-                                                     u.UserImage,
-                                                     u.ReceiptConfirmed,
-                                                     u.CreatedAt
-                                                 },
-                                                 Geolocation = g,
-                                                 Point = p,
-                                                 Supplier = s,
-                                                 Technician = t,
-                                                 Inauguration = x
-                                             }).FirstOrDefaultAsync();
+                if (!int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    return BadRequest("O ID do usuário é inválido.");
+                }
+
+                // Consulta para obter o usuário
+                var user = await _dbContext.Users
+                    .Where(u => u.Id == userId)
+                    .Select(u => new
+                    {
+                        u.Id,
+                        u.Name,
+                        u.Email,
+                        // outros campos do usuário que você queira incluir
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
+                // Consulta para obter os projetos do usuário
+var projects = await (from p in _dbContext.Project
+                      where p.userId == userId
+                      select new
+                      {
+                          p.Id,
+                          p.Name,
+                          Geolocation = (from pg in _dbContext.Project_Geolocation
+                                         join g in _dbContext.Geolocation on pg.GeolocationId equals g.Id
+                                         where pg.ProjectId == p.Id
+                                         select g).FirstOrDefault(),
+                          Point = (from pp in _dbContext.Project_Point
+                                   join pt in _dbContext.Point on pp.PointId equals pt.Id
+                                   where pp.ProjectId == p.Id
+                                   select pt).FirstOrDefault(),
+                          Suppliers = (from ps in _dbContext.Project_Supplier
+                                       join s in _dbContext.Supplier on ps.SupplierId equals s.Id
+                                       where ps.ProjectId == p.Id
+                                       select s).ToList(),
+                          Technician = (from ptc in _dbContext.Project_Technician
+                                        join t in _dbContext.Technician on ptc.TechnicianId equals t.Id
+                                        where ptc.ProjectId == p.Id
+                                        select t).FirstOrDefault(),
+                          Electric = (from e in _dbContext.Project_Electric
+                                        where e.ProjectId == p.Id
+                                        select e).FirstOrDefault(),
+                          ProjectFiles = new
+                          {
+                              ConfirmedReceipt = (from pf in _dbContext.Project_File
+                                                  where pf.ProjectId == p.Id
+                                                  select pf.ConfirmedReceipt).FirstOrDefault(),
+                              ReceiptDeclinedReason = (from pf in _dbContext.Project_File
+                                                       where pf.ProjectId == p.Id
+                                                       select pf.ReceiptDeclinedReason).FirstOrDefault(),
+                              Recipe = (from pf in _dbContext.Project_File
+                                        join f in _dbContext.FileModel on pf.FileId equals f.Id
+                                        where pf.ProjectId == p.Id && f.FileType == "Recipe"
+                                        select f).FirstOrDefault(),
+                              HydraulicModel = (from pf in _dbContext.Project_File
+                                                join fh in _dbContext.FileModel on pf.FileId equals fh.Id
+                                                where pf.ProjectId == p.Id && fh.FileType == "HydraulicModel"
+                                                select fh).FirstOrDefault(),
+                              ElectricModel = (from pf in _dbContext.Project_File
+                                               join fe in _dbContext.FileModel on pf.FileId equals fe.Id
+                                               where pf.ProjectId == p.Id && fe.FileType == "ElectricModel"
+                                               select fe).FirstOrDefault(),
+                              SketchModel = (from pf in _dbContext.Project_File
+                                             join fs in _dbContext.FileModel on pf.FileId equals fs.Id
+                                             where pf.ProjectId == p.Id && fs.FileType == "SketchModel"
+                                             select fs).FirstOrDefault()
+                          }
+                      }).ToListAsync();
 
 
 
+                var result = new
+                {
+                    User = new
+                    {
+                        user.Id,
+                        user.Name,
+                        user.Email,
+                        Projects = projects
+                    }
+                };
 
-
-                await _dbContext.SaveChangesAsync();
-
-                return Ok(userWithDetails);
+                return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Ocorreu um erro durante o processamento da solicitação. {ex}");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Ocorreu um erro durante o processamento da solicitação. {ex.Message}");
             }
         }
 
@@ -367,19 +388,19 @@ namespace LSF.Controllers
         }
 
         [HttpPost("UserProduct")]
-        public async Task<bool> UserProduct(int supplierType, int productId, int quantity)
+        public async Task<bool> UserProduct(int supplierType, int productId, int quantity, int projectId)
         {
             var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
-            var result = new UserProduct
+            var result = new ProjectProduct
             {
                 Quantity = quantity,
-                UserId = userId,
+                ProjectId = projectId,
                 ProductId = productId,
                 SupplierType = supplierType
             };
 
-            _dbContext.User_Product.Add(result);
+            _dbContext.Project_Product.Add(result);
 
             await _dbContext.SaveChangesAsync();
 
@@ -414,63 +435,15 @@ namespace LSF.Controllers
                                             u.Phone,
                                             u.Email,
                                             u.Password,
-                                            u.Receipt,
                                             u.UserImage,
                                             u.RecoveryCode,
-                                            u.ReceiptConfirmed
                                         })
                                         .ToListAsync();
 
             return Ok(users);
         }
 
-        [HttpGet("GetById/{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var userWithDetails = await (from u in _dbContext.Users
-                                         where u.Id == id
-                                         join ug in _dbContext.User_Geolocation on u.Id equals ug.UserId into ugGroup
-                                         from ug in ugGroup.DefaultIfEmpty()
-                                         join up in _dbContext.User_Point on u.Id equals up.UserId into upGroup
-                                         from up in upGroup.DefaultIfEmpty()
-                                         join us in _dbContext.User_Supplier on u.Id equals us.UserId into usGroup
-                                         from us in usGroup.DefaultIfEmpty()
-                                         join ut in _dbContext.User_Technician on u.Id equals ut.UserId into utGroup
-                                         from ut in utGroup.DefaultIfEmpty()
-                                         join g in _dbContext.Geolocation on ug.GeolocationId equals g.Id into gGroup
-                                         from g in gGroup.DefaultIfEmpty()
-                                         join p in _dbContext.Point on up.PointId equals p.Id into pGroup
-                                         from p in pGroup.DefaultIfEmpty()
-                                         join s in _dbContext.Supplier on us.SupplierId equals s.Id into sGroup
-                                         from s in sGroup.DefaultIfEmpty()
-                                         join t in _dbContext.Technician on ut.TechnicianId equals t.Id into tGroup
-                                         from t in tGroup.DefaultIfEmpty()
-                                         select new
-                                         {
-                                             User = new
-                                             {
-                                                 u.Id,
-                                                 u.Name,
-                                                 u.UserName,
-                                                 u.Phone,
-                                                 u.Email,
-                                                 u.UserImage,
-                                                 u.Receipt,
-                                                 u.ReceiptConfirmed
-                                             },
-                                             Geolocation = g,
-                                             Point = p,
-                                             Supplier = s,
-                                             Technician = t
-                                         }).FirstOrDefaultAsync();
 
-            if (userWithDetails == null)
-            {
-                return NotFound("Usuário não encontrado");
-            }
-
-            return Ok(userWithDetails);
-        }
 
         [HttpPut("Put/{id}")]
         public async Task<IActionResult> Put(int id, UserModel updatedUser)
@@ -482,11 +455,9 @@ namespace LSF.Controllers
             existingUser.Email = updatedUser.Email ?? existingUser.Email;
             existingUser.Password = updatedUser.Password ?? existingUser.Password;
             existingUser.UserImage = updatedUser.UserImage ?? existingUser.UserImage;
-            existingUser.Receipt = updatedUser.Receipt ?? existingUser.Receipt;
             existingUser.Name = updatedUser.Name ?? existingUser.Name;
             existingUser.UserName = updatedUser.UserName ?? existingUser.UserName;
             existingUser.Phone = updatedUser.Phone ?? existingUser.Phone;
-            existingUser.ReceiptConfirmed = updatedUser.ReceiptConfirmed;
 
             await _dbContext.SaveChangesAsync();
 
@@ -498,9 +469,7 @@ namespace LSF.Controllers
                 existingUser.Phone,
                 existingUser.Email,
                 existingUser.Password,
-                existingUser.Receipt,
                 existingUser.UserImage,
-                existingUser.ReceiptConfirmed
             };
 
             return Ok(updatedUserData);
@@ -548,86 +517,6 @@ namespace LSF.Controllers
             await _dbContext.SaveChangesAsync();
 
             return Ok("Usuário atualizado e role adicionada com sucesso");
-        }
-
-        [HttpPut("UploadPdf/{userId}")]
-        public async Task<IActionResult> UploadPdf(int userId, IFormFile pdfFile)
-        {
-            // Verifica se o arquivo PDF é válido
-            if (pdfFile == null || pdfFile.Length == 0)
-            {
-                return BadRequest("PDF file is required.");
-            }
-
-            // Busca o usuário pelo ID
-            var user = await _dbContext.Users.FirstOrDefaultAsync(uid => uid.Id == userId);
-            if (user == null)
-            {
-                return NotFound($"User with ID {userId} not found.");
-            }
-
-            try
-            {
-                // Lê o arquivo PDF em bytes
-                using (var memoryStream = new MemoryStream())
-                {
-                    await pdfFile.CopyToAsync(memoryStream);
-                    // Atualiza apenas o PDF do usuário
-                    user.Receipt = memoryStream.ToArray();
-                }
-
-                // Atualiza o usuário com o novo PDF
-                var result = await _dbContext.SaveChangesAsync();
-
-                return Ok("PDF uploaded successfully.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"An error occurred: {ex.Message}");
-            }
-        }
-
-
-        [HttpPut("UploadImage/{userId}")]
-        public async Task<IActionResult> UploadImage(int userId, IFormFile imageFile)
-        {
-            // Verifica se o arquivo de imagem é válido
-            if (imageFile == null || imageFile.Length == 0)
-            {
-                return BadRequest("Image file is required.");
-            }
-
-            // Busca o usuário pelo ID
-            var user = await _dbContext.Users.FirstOrDefaultAsync(uid => uid.Id == userId);
-            if (user == null)
-            {
-                return NotFound($"User with ID {userId} not found.");
-            }
-
-            try
-            {
-                // Verifica se o arquivo é uma imagem
-                if (!imageFile.ContentType.StartsWith("image"))
-                {
-                    return BadRequest("Only image files are allowed.");
-                }
-
-                // Lê a imagem em bytes
-                using (var memoryStream = new MemoryStream())
-                {
-                    await imageFile.CopyToAsync(memoryStream);
-                    user.UserImage = memoryStream.ToArray();
-                }
-
-                // Atualiza o usuário com a imagem
-                var result = await _dbContext.SaveChangesAsync();
-
-                return Ok("Image uploaded successfully.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"An error occurred: {ex.Message}");
-            }
         }
 
         [HttpDelete("Delete{id}")]

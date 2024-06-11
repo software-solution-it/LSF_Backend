@@ -1,25 +1,28 @@
+ï»¿using Amazon.S3;
+using Amazon;
 using LSF.Data;
 using LSF.Models;
-using Microsoft.AspNetCore.Authentication.BearerToken;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using OfficeOpenXml;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configurar conexï¿½o com o banco de dados
 var connection = builder.Configuration.GetConnectionString("ConectaSQL");
 builder.Services.AddDbContext<APIDbContext>(option => option.UseMySql(
     connection,
     ServerVersion.Parse("10.4.32-MariaDB")
-    )
-);
+));
+
+// Configurar o cliente Amazon S3 manualmente
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    return new AmazonS3Client(config["AWS:AccessKey"], config["AWS:SecretKey"], RegionEndpoint.GetBySystemName(config["AWS:Region"]));
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -77,7 +80,7 @@ app.UseSwaggerUI();
 //{
 //    var serviceProvider = scope.ServiceProvider;
 
-//    // Obtenha uma instância de ExcelService dentro do escopo
+//    // Obtenha uma instï¿½ncia de ExcelService dentro do escopo
 //    var excelService = serviceProvider.GetRequiredService<ExcelService>();
 
 //    // Atualiza o banco de dados com os dados da planilha Excel

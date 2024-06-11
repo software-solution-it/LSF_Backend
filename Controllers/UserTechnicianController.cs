@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LSF.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     [ApiExplorerSettings(IgnoreApi = true)]
     public class UserTechnicianController : ControllerBase
@@ -19,15 +19,15 @@ namespace LSF.Controllers
         }
 
         [HttpGet]
-        public IEnumerable<UserTechnician> Get()
+        public IEnumerable<ProjectTechnician> Get()
         {
-            return _dbContext.User_Technician.ToList();
+            return _dbContext.Project_Technician.ToList();
         }
 
         [HttpGet("{id}")]
-        public ActionResult<UserTechnician> Get(int id)
+        public ActionResult<ProjectTechnician> Get(int id)
         {
-            var userGeo = _dbContext.User_Technician.FirstOrDefault(t => t.Id == id);
+            var userGeo = _dbContext.Project_Technician.FirstOrDefault(t => t.Id == id);
 
             if (userGeo == null)
             {
@@ -38,9 +38,9 @@ namespace LSF.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateUserTechnician(UserTechnicianModel model)
+        public async Task<IActionResult> CreateUserTechnician(ProjectTechnicianModel model)
         {
-            var user = await _dbContext.Users.FindAsync(model.UserId);
+            var user = await _dbContext.Users.FindAsync(model.ProjectId);
             if (user == null)
             {
                 return NotFound("Usuário não encontrado.");
@@ -52,31 +52,31 @@ namespace LSF.Controllers
                 return NotFound("Technician não encontrada.");
             }
 
-            var UserTechnician = new UserTechnician
+            var UserTechnician = new ProjectTechnician
             {
-                UserId = model.UserId,
+                ProjectId = model.ProjectId,
                 TechnicianId = model.TechnicianId
             };
 
-            _dbContext.User_Technician.Add(UserTechnician);
+            _dbContext.Project_Technician.Add(UserTechnician);
             await _dbContext.SaveChangesAsync();
 
             return Ok("Relacionamento usuário-Technician criado com sucesso.");
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, UserTechnicianModel model)
+        public async Task<IActionResult> Put(int id, ProjectTechnicianModel model)
         {
-            var userGeo = await _dbContext.User_Technician.FindAsync(id);
+            var userGeo = await _dbContext.Project_Technician.FindAsync(id);
             if (userGeo == null)
             {
                 return NotFound("Relacionamento usuário-Technician não encontrado.");
             }
 
-            userGeo.UserId = model.UserId;
+            userGeo.ProjectId = model.ProjectId;
             userGeo.TechnicianId = model.TechnicianId;
 
-            _dbContext.User_Technician.Update(userGeo);
+            _dbContext.Project_Technician.Update(userGeo);
             await _dbContext.SaveChangesAsync();
 
             return Ok("Relacionamento usuário-Technician atualizado com sucesso.");
@@ -85,13 +85,13 @@ namespace LSF.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var userGeo = await _dbContext.User_Technician.FindAsync(id);
+            var userGeo = await _dbContext.Project_Technician.FindAsync(id);
             if (userGeo == null)
             {
                 return NotFound("Relacionamento usuário-Technician não encontrado.");
             }
 
-            _dbContext.User_Technician.Remove(userGeo);
+            _dbContext.Project_Technician.Remove(userGeo);
             await _dbContext.SaveChangesAsync();
 
             return Ok("Relacionamento usuário-Technician excluído com sucesso.");

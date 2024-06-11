@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LSF.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class ProductController : ControllerBase
     {

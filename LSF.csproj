@@ -10,6 +10,9 @@
   <ItemGroup>
     <Compile Remove="Controllers\CustomerController.cs" />
     <Compile Remove="Models\Customer.cs" />
+     <None Update="Template\Email.html">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	 </None>
   </ItemGroup>
 
   <ItemGroup>

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using LSF.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,7 +69,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-//builder.Services.AddScoped<ExcelService>();
+builder.Services.AddTransient<ProjectController>();
+builder.Services.AddTransient<HotmartController>();
 
 var app = builder.Build();
 

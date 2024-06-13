@@ -141,5 +141,27 @@ namespace LSF.Controllers
                 return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
             }
         }
+
+
+       [HttpPost("PostProject")]
+        public async Task<IActionResult> PostProject([FromBody] Project newProject)
+            {
+
+            if (newProject == null || string.IsNullOrEmpty(newProject.userId.ToString()))
+            {
+                return BadRequest("Dados do usuário inválido.");
+            }
+
+            try
+                {
+                    await _dbContext.Project.AddAsync(newProject);
+                    await _dbContext.SaveChangesAsync();
+                    return Ok(newProject);
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
+                }
+        }
     }
 }

@@ -10,6 +10,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -21,11 +22,13 @@ namespace LSF.Controllers
     {
         private readonly APIDbContext _dbContext;
         private readonly Random _random = new Random();
+        private readonly ProjectController _projectController;
         private static readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 
-        public HotmartController(APIDbContext dbContext)
+        public HotmartController(APIDbContext dbContext, ProjectController projectController)
         {
             _dbContext = dbContext;
+            _projectController = projectController;
         }
 
         [HttpPost("/hotmart/purchase")]
@@ -55,10 +58,16 @@ namespace LSF.Controllers
 
                 };
 
-                var emailContent = $"Seu login para acessar o App é : {newUser.Email}";
-                var emailSubject = $"Sua senha é: {randomPassword}";
+                var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Template", "Email.html");
+                string emailHtml = await System.IO.File.ReadAllTextAsync(templatePath);
 
-                var result = await SendEmailAsync(newUser.Email, emailSubject, emailContent);
+                emailHtml = emailHtml.Replace("{{UserName}}", newUser.Name)
+                                     .Replace("{{Email}}", newUser.Email)
+                                     .Replace("{{Password}}", randomPassword);
+
+                var emailSubject = $"Bem vindo ao Faculdade da Lavanderia";
+
+                var result = await SendEmailAsync(newUser.Email, emailSubject, emailHtml);
 
                 if (!result) return BadRequest("Falha ao enviar email.");
                 await _dbContext.Users.AddAsync(newUser);
@@ -74,6 +83,16 @@ namespace LSF.Controllers
 
                 await _dbContext.UserRoles.AddAsync(userRole);
                 await _dbContext.SaveChangesAsync();
+
+
+
+                var project = new Project
+                {
+                    userId = newUser.Id,
+                    Status = true
+                };
+
+                await _projectController.PostProject(project);
 
                 return Ok(purchase);
             }catch (Exception ex)
@@ -100,10 +119,10 @@ namespace LSF.Controllers
             }
         }
 
-        private async Task<bool> SendEmailAsync(string emailDestinatário, string emailSubject, string emailContent)
+        private async Task<bool> SendEmailAsync(string emailDestinatário, string emailSubject, string emailHtml)
         {
-            string remetenteEmail = "contato@softsnov.com";
-            string remetenteSenha = "Gg2456e9@@";
+            string remetenteEmail = "suporte@faculdadedalavanderia.com.br";
+            string remetenteSenha = "Lsf#2024";
             string destinatarioEmail = emailDestinatário;
             string smtpServidor = "smtp.hostinger.com";
             int porta = 587;
@@ -115,10 +134,14 @@ namespace LSF.Controllers
                     smtp.EnableSsl = true;
                     smtp.UseDefaultCredentials = false;
                     smtp.Credentials = new NetworkCredential(remetenteEmail, remetenteSenha);
-                    using (MailMessage mensagem = new MailMessage(new MailAddress(remetenteEmail, "Contato"), new MailAddress(destinatarioEmail)))
+
+                    MailAddress remetente = new MailAddress(remetenteEmail, "LSF", Encoding.UTF8);
+
+                    using (MailMessage mensagem = new MailMessage(remetente, new MailAddress(destinatarioEmail)))
                     {
                         mensagem.Subject = emailSubject;
-                        mensagem.Body = emailContent;
+                        mensagem.Body = emailHtml;
+                        mensagem.IsBodyHtml = true;
 
                         await smtp.SendMailAsync(mensagem);
                     }

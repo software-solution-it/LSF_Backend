@@ -34,84 +34,82 @@ namespace LSF.Controllers
         [HttpPost("/hotmart/purchase")]
         public async Task<IActionResult> PostPurchase([FromBody] PurchaseObject purchase)
         {
-                if (purchase.Data.Buyer == null) return BadRequest("Purchase não encontrado");
-
-                var t = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == purchase.Data.Buyer.Email);
-
-                if (t != null) return BadRequest("Email ja cadastrado!");
-
-                var newBuyer = purchase.Data.Buyer;
-
-                var randomCharts = GenerateRandomChars();
-                var randomPassword = GeneratePassword();
-                var hashedPassword = HashPassword(randomPassword);
-
-                var newUser = new User
-                {
-                    Name = newBuyer.Name,
-                    UserName = $"{newBuyer.Name}_{randomCharts}",
-                    Email = newBuyer.Email,
-                    Phone = newBuyer.CheckoutPhone ?? "",
-                    Password = hashedPassword
-
-                };
-
-                var templatePath = Path.Combine("/var/app/current/", "Template", "Email.html"); 
-                string emailHtml = await System.IO.File.ReadAllTextAsync(templatePath);
-
-                emailHtml = emailHtml.Replace("{{UserName}}", newUser.Name)
-                                     .Replace("{{Email}}", newUser.Email)
-                                     .Replace("{{Password}}", randomPassword);
-
-                var emailSubject = $"Bem vindo ao Faculdade da Lavanderia";
-
-                var result = await SendEmailAsync(newUser.Email, emailSubject, emailHtml);
-
-            if (!result)
+            if (purchase.Data.Buyer == null)
             {
-                var templatePath2 = Path.Combine("/var/app/", "Template", "Email.html");
-                string emailHtml2 = await System.IO.File.ReadAllTextAsync(templatePath2);
+                return BadRequest("Purchase não encontrado");
+            }
 
-                emailHtml2 = emailHtml.Replace("{{UserName}}", newUser.Name)
-                     .Replace("{{Email}}", newUser.Email)
-                     .Replace("{{Password}}", randomPassword);
+            var existingUser = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == purchase.Data.Buyer.Email);
 
+            if (existingUser != null)
+            {
+                return BadRequest("Email já cadastrado!");
+            }
 
-                var result2 = await SendEmailAsync(newUser.Email, emailSubject, emailHtml2);
+            var newBuyer = purchase.Data.Buyer;
+            var randomChars = GenerateRandomChars();
+            var randomPassword = GeneratePassword();
+            var hashedPassword = HashPassword(randomPassword);
 
-                if (!result2)
+            var newUser = new User
+            {
+                Name = newBuyer.Name,
+                UserName = $"{newBuyer.Name}_{randomChars}",
+                Email = newBuyer.Email,
+                Phone = newBuyer.CheckoutPhone ?? "",
+                Password = hashedPassword
+            };
+
+            var templatePath = Path.Combine("/var/app/current/", "Template", "Email.html");
+            string emailHtml = await System.IO.File.ReadAllTextAsync(templatePath);
+
+            emailHtml = emailHtml.Replace("{{UserName}}", newUser.Name)
+                                 .Replace("{{Email}}", newUser.Email)
+                                 .Replace("{{Password}}", randomPassword);
+
+            var emailSubject = "Bem vindo ao Faculdade da Lavanderia";
+            var emailResult = await SendEmailAsync(newUser.Email, emailSubject, emailHtml);
+
+            if (!emailResult)
+            {
+                var fallbackTemplatePath = Path.Combine("/var/app/", "Template", "Email.html");
+                string fallbackEmailHtml = await System.IO.File.ReadAllTextAsync(fallbackTemplatePath);
+
+                fallbackEmailHtml = fallbackEmailHtml.Replace("{{UserName}}", newUser.Name)
+                                                     .Replace("{{Email}}", newUser.Email)
+                                                     .Replace("{{Password}}", randomPassword);
+
+                var fallbackEmailResult = await SendEmailAsync(newUser.Email, emailSubject, fallbackEmailHtml);
+
+                if (!fallbackEmailResult)
                 {
                     return BadRequest("Falha ao enviar email.");
-
                 }
             }
-                await _dbContext.Users.AddAsync(newUser);
-                await _dbContext.SaveChangesAsync();
 
+            await _dbContext.Users.AddAsync(newUser);
+            await _dbContext.SaveChangesAsync();
 
-                var userRole = new UserRole
-                {
-                    UserId = newUser.Id,
-                    RoleId = 2
-                };
+            var userRole = new UserRole
+            {
+                UserId = newUser.Id,
+                RoleId = 2
+            };
 
+            await _dbContext.UserRoles.AddAsync(userRole);
+            await _dbContext.SaveChangesAsync();
 
-                await _dbContext.UserRoles.AddAsync(userRole);
-                await _dbContext.SaveChangesAsync();
+            var project = new Project
+            {
+                userId = newUser.Id,
+                Status = true
+            };
 
+            await _projectController.PostProject(project);
 
+            return Ok(purchase);
+        }
 
-                var project = new Project
-                {
-                    userId = newUser.Id,
-                    Status = true
-                };
-
-                await _projectController.PostProject(project);
-
-                return Ok(purchase);
-            }
-        
 
 
         private string HashPassword(string password)

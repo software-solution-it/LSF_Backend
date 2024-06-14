@@ -34,8 +34,6 @@ namespace LSF.Controllers
         [HttpPost("/hotmart/purchase")]
         public async Task<IActionResult> PostPurchase([FromBody] PurchaseObject purchase)
         {
-            try
-            {
                 if (purchase.Data.Buyer == null) return BadRequest("Purchase não encontrado");
 
                 var t = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == purchase.Data.Buyer.Email);
@@ -58,7 +56,7 @@ namespace LSF.Controllers
 
                 };
 
-                var templatePath = Path.Combine("/var/app/current", "Template", "Email.html"); 
+                var templatePath = Path.Combine("/var/app/current/", "Template", "Email.html"); 
                 string emailHtml = await System.IO.File.ReadAllTextAsync(templatePath);
 
                 emailHtml = emailHtml.Replace("{{UserName}}", newUser.Name)
@@ -69,7 +67,25 @@ namespace LSF.Controllers
 
                 var result = await SendEmailAsync(newUser.Email, emailSubject, emailHtml);
 
-                if (!result) return BadRequest("Falha ao enviar email.");
+            if (!result)
+            {
+                var templatePath2 = Path.Combine("/var/app/", "Template", "Email.html");
+                string emailHtml2 = await System.IO.File.ReadAllTextAsync(templatePath);
+
+                emailHtml2 = emailHtml.Replace("{{UserName}}", newUser.Name)
+                     .Replace("{{Email}}", newUser.Email)
+                     .Replace("{{Password}}", randomPassword);
+
+                var emailSubject2 = $"Bem vindo ao Faculdade da Lavanderia";
+
+                var result2 = await SendEmailAsync(newUser.Email, emailSubject, emailHtml);
+
+                if (!result2)
+                {
+                    return BadRequest("Falha ao enviar email.");
+
+                }
+            }
                 await _dbContext.Users.AddAsync(newUser);
                 await _dbContext.SaveChangesAsync();
 
@@ -95,12 +111,9 @@ namespace LSF.Controllers
                 await _projectController.PostProject(project);
 
                 return Ok(purchase);
-            }catch (Exception ex)
-            {
-                Console.WriteLine($"Ocorreu um erro: {ex.Message}");
-                return StatusCode(500, "Ocorreu um erro ao processar sua solicitação.");
             }
-        }
+        
+
 
         private string HashPassword(string password)
         {

@@ -59,6 +59,8 @@ namespace LSF.Controllers
             {
                 new Claim("userId", user.User.Id.ToString()),
                 new Claim("role", user.Role.Id.ToString()),
+                new Claim("userName", user.User.UserName),
+                new Claim("fa", user.User.FirstAccess.ToString())
             };
 
             var accessToken = new JwtSecurityToken(
@@ -408,19 +410,72 @@ var projects = await (from p in _dbContext.Project
         }
 
         [HttpPut("NewPassword")]
-        public async Task<ActionResult> NewPassword(UserModelRegister model)
+        [Authorize]
+        public async Task<ActionResult> NewPassword(string password)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "userId");
+            var userNameClaim = User.Claims.FirstOrDefault(c => c.Type == "userName");
 
-            if (user == null) return BadRequest("Usuário não encontrado");
+            if (userIdClaim == null || userNameClaim == null)
+            {
+                return BadRequest("Claims 'userId' ou 'userName' não encontradas.");
+            }
 
-            if (!IsPasswordValidate(model.Password!)) return BadRequest("Senha inválida");
+            if (!int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return BadRequest("O ID do usuário é inválido.");
+            }
 
-            user.Password = model.Password;
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId && u.UserName == userNameClaim.Value);
 
+            if (user == null)
+            {
+                return BadRequest("Usuário não encontrado.");
+            }
+
+            if (!IsPasswordValidate(password))
+            {
+                return BadRequest("Senha inválida.");
+            }
+            user.FirstAccess = false;
+            user.Password = HashPassword(password);
             await _dbContext.SaveChangesAsync();
 
-            return Ok();
+            return Ok("Senha atualizada com sucesso.");
+        }
+
+
+        [HttpPut("FirstAccess")]
+        [Authorize]
+        public async Task<ActionResult> FirstAccess(UserModelRegister model)
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "userId");
+            if (userIdClaim == null)
+            {
+                return BadRequest("Claim 'userId' não encontrada.");
+            }
+
+            if (!int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return BadRequest("O ID do usuário é inválido.");
+            }
+
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound("Usuário não encontrado.");
+            }
+
+            if (!IsPasswordValidate(model.Password))
+            {
+                return BadRequest("Senha inválida.");
+            }
+
+            // Atualizar a senha do usuário
+            user.Password = HashPassword(model.Password);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok("Senha atualizada com sucesso.");
         }
 
         [HttpGet("GetAll")]

@@ -70,15 +70,14 @@ namespace LSF.Controllers
             if (!result)
             {
                 var templatePath2 = Path.Combine("/var/app/", "Template", "Email.html");
-                string emailHtml2 = await System.IO.File.ReadAllTextAsync(templatePath);
+                string emailHtml2 = await System.IO.File.ReadAllTextAsync(templatePath2);
 
                 emailHtml2 = emailHtml.Replace("{{UserName}}", newUser.Name)
                      .Replace("{{Email}}", newUser.Email)
                      .Replace("{{Password}}", randomPassword);
 
-                var emailSubject2 = $"Bem vindo ao Faculdade da Lavanderia";
 
-                var result2 = await SendEmailAsync(newUser.Email, emailSubject, emailHtml);
+                var result2 = await SendEmailAsync(newUser.Email, emailSubject, emailHtml2);
 
                 if (!result2)
                 {

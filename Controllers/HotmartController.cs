@@ -60,7 +60,7 @@ namespace LSF.Controllers
                 Password = hashedPassword
             };
 
-            var templatePath = Path.Combine("/var/app/current/", "Template", "Email.html");
+            var templatePath = Path.Combine("/var/app/current/", "Email.html");
             string emailHtml = await System.IO.File.ReadAllTextAsync(templatePath);
 
             emailHtml = emailHtml.Replace("{{UserName}}", newUser.Name)
@@ -72,7 +72,7 @@ namespace LSF.Controllers
 
             if (!emailResult)
             {
-                var fallbackTemplatePath = Path.Combine("/var/app/", "Template", "Email.html");
+                var fallbackTemplatePath = Path.Combine("/var/app/", "Email.html");
                 string fallbackEmailHtml = await System.IO.File.ReadAllTextAsync(fallbackTemplatePath);
 
                 fallbackEmailHtml = fallbackEmailHtml.Replace("{{UserName}}", newUser.Name)

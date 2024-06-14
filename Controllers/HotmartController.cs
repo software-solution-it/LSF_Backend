@@ -86,7 +86,7 @@ namespace LSF.Controllers
                     return BadRequest("Falha ao enviar email.");
                 }
             }
-
+             
             await _dbContext.Users.AddAsync(newUser);
             await _dbContext.SaveChangesAsync();
 

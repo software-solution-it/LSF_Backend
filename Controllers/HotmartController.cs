@@ -58,7 +58,7 @@ namespace LSF.Controllers
 
                 };
 
-                var templatePath = Path.Combine("/var/app/current", "Template", "Email.html");
+                var templatePath = Path.Combine(AppContext.BaseDirectory, "Template", "Email.html");
                 string emailHtml = await System.IO.File.ReadAllTextAsync(templatePath);
 
                 emailHtml = emailHtml.Replace("{{UserName}}", newUser.Name)

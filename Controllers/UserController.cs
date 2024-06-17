@@ -60,7 +60,8 @@ namespace LSF.Controllers
                 new Claim("userId", user.User.Id.ToString()),
                 new Claim("role", user.Role.Id.ToString()),
                 new Claim("userName", user.User.UserName),
-                new Claim("fa", user.User.FirstAccess.ToString())
+                new Claim("fa", user.User.FirstAccess.ToString()),
+                new Claim("active", user.User.isActive.ToString())
             };
 
             var accessToken = new JwtSecurityToken(

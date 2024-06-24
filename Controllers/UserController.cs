@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pag
 using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Security.Cryptography;
+using PurchaseObjects;
 
 
 namespace LSF.Controllers
@@ -211,6 +212,8 @@ namespace LSF.Controllers
                 {
                     return NotFound("User not found.");
                 }
+
+
                 // Consulta para obter os projetos do usuário
 var projects = await (from p in _dbContext.Project
                       where p.userId == userId
@@ -391,16 +394,16 @@ var projects = await (from p in _dbContext.Project
         }
 
         [HttpPost("UserProduct")]
-        public async Task<bool> UserProduct(int supplierType, int productId, int quantity, int projectId)
+        public async Task<bool> UserProduct(ProjectProduct product)
         {
             var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
 
             var result = new ProjectProduct
             {
-                Quantity = quantity,
-                ProjectId = projectId,
-                ProductId = productId,
-                SupplierType = supplierType
+                Quantity = product.Quantity,
+                ProjectId = product.ProjectId,
+                ProductId = product.ProductId,
+                SupplierType = product.SupplierType
             };
 
             _dbContext.Project_Product.Add(result);
@@ -408,6 +411,17 @@ var projects = await (from p in _dbContext.Project
             await _dbContext.SaveChangesAsync();
 
             return true;
+        }
+
+        [HttpGet("UserProduct")]
+        [Authorize]
+        public async Task<ProjectProduct> GetUserProduct(int projectId)
+        {
+
+            var product = await _dbContext.Project_Product
+           .FirstOrDefaultAsync(u => u.ProjectId == projectId && u.SupplierType == 1);
+
+            return product;
         }
 
         [HttpPut("NewPassword")]

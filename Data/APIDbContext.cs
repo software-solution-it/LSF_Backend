@@ -52,6 +52,7 @@ namespace LSF.Data
         public DbSet<ProjectSupplier> Project_Supplier { get; set; }
         public DbSet<ProjectTechnician> Project_Technician { get; set; }
         public DbSet<ProjectElectric> Project_Electric { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         public DbSet<ProjectFile> Project_File { get; set; }
         public DbSet<FileModel> FileModel { get; set; }
         public DbSet<Role> Roles { get; set; }

@@ -11,7 +11,7 @@ using LSF.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar conex�o com o banco de dados
+// Configurar conexão com o banco de dados
 var connection = builder.Configuration.GetConnectionString("ConectaSQL");
 builder.Services.AddDbContext<APIDbContext>(option => option.UseMySql(
     connection,
@@ -76,20 +76,6 @@ var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
-
-//ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-//using (var scope = app.Services.CreateScope())
-//{
-//    var serviceProvider = scope.ServiceProvider;
-
-//    // Obtenha uma inst�ncia de ExcelService dentro do escopo
-//    var excelService = serviceProvider.GetRequiredService<ExcelService>();
-
-//    // Atualiza o banco de dados com os dados da planilha Excel
-//    excelService.AtualizarBancoDadosComPlanilhaExcelBotErros(@"C:\Users\gatob\Desktop\Gabriel\NovoLSF\BotError.xlsx");
-//}
-
-app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

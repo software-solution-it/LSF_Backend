@@ -176,7 +176,7 @@ namespace LSF.Controllers
 
                 var assistMessage = lastAssistantMessage["content"]?[0]?["text"]?["value"]?.ToString();
                 assistMessage = assistMessage?.Replace("\n", ""); // Remove newline characters
-
+                 
                 var result = new JArray
         {
             new JObject

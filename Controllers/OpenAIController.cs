@@ -18,7 +18,7 @@ namespace LSF.Controllers
     [Authorize]
     public class OpenAIController : ControllerBase
     {
-        private readonly string _apiKey = "sk-proj-0M59k8mduvteCTOMmn4CT3BlbkFJjcLfEjbBUxnYZyy0Rgna";
+        private readonly string _apiKey = "sk-proj-vBQkEHSn1pkpXB2ULjCST3BlbkFJOy4l4E5w5sRAX7qBf8D5";
         private readonly string _assistantId = "asst_UTKNJlAeXmHBQYsp4AWPHBi7";
         private readonly APIDbContext _dbContext;
 

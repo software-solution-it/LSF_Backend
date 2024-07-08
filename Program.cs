@@ -72,6 +72,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddTransient<ProjectController>();
 builder.Services.AddTransient<HotmartController>();
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromMilliseconds(65000);
+    serverOptions.Limits.RequestHeadersTimeout = TimeSpan.FromMilliseconds(80000);
+});
+
 var app = builder.Build();
 
 app.UseSwagger();

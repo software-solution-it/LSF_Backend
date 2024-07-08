@@ -3,6 +3,13 @@ using LSF.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace LSF.Controllers
 {
@@ -18,10 +25,36 @@ namespace LSF.Controllers
             _dbContext = dbContext;
         }
 
-        [HttpGet("GetAll")]
-        public IEnumerable<SalesReport> GetAll()
+        [HttpGet("GetById")]
+        public IActionResult GetById([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
         {
-            return _dbContext.SalesReport.ToList();
+            try
+            {
+                var userId = Int32.Parse(User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value);
+
+                var salesReportsQuery = _dbContext.SalesReport.Where(report => report.UserId == userId);
+
+                if (startDate.HasValue && endDate.HasValue)
+                {
+                    salesReportsQuery = salesReportsQuery.Where(report => report.SellDate >= startDate.Value && report.SellDate <= endDate.Value);
+                }
+                else if (startDate.HasValue)
+                {
+                    salesReportsQuery = salesReportsQuery.Where(report => report.SellDate >= startDate.Value);
+                }
+                else if (endDate.HasValue)
+                {
+                    salesReportsQuery = salesReportsQuery.Where(report => report.SellDate <= endDate.Value);
+                }
+
+                var salesReports = salesReportsQuery.ToList();
+
+                return Ok(salesReports);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Ocorreu um erro ao processar a solicitação: {ex.Message}");
+            }
         }
 
         [HttpPost("PostReport")]
@@ -37,7 +70,7 @@ namespace LSF.Controllers
                 if (!excelFile.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
                     return BadRequest("Formato de arquivo inválido. Apenas arquivos Excel (.xlsx) são suportados.");
 
-                List<SalesReport> result = new List<SalesReport>();
+                List<SalesReport> newSalesReports = new List<SalesReport>();
 
                 using (var stream = new MemoryStream())
                 {
@@ -48,41 +81,31 @@ namespace LSF.Controllers
                         var worksheet = package.Workbook.Worksheets[0]; // Pega a primeira planilha do arquivo
 
                         int rowCount = worksheet.Dimension.Rows;
-                        int colCount = worksheet.Dimension.Columns;
 
-                        // Dividir o processamento em lotes para melhorar a escalabilidade
-                        var batchSize = 100; // Processaremos 100 linhas por vez
-                        var batches = Enumerable.Range(2, rowCount - 1)
-                                                .Select(x => new { Start = x, End = Math.Min(x + batchSize - 1, rowCount) });
-
-                        var tasks = batches.Select(async batch =>
+                        for (int row = 2; row <= rowCount; row++) // Assumindo que a primeira linha são cabeçalhos
                         {
-                            var batchResult = new List<SalesReport>();
-
-                            for (int row = batch.Start; row <= batch.End; row++)
+                            var sale = await ProcessRowAsync(worksheet, row, userId);
+                            if (sale != null)
                             {
-                                var sale = await ProcessRowAsync(worksheet, row, userId);
-                                batchResult.Add(sale);
+                                newSalesReports.Add(sale);
                             }
-
-                            lock (result)
-                            {
-                                result.AddRange(batchResult);
-                            }
-                        });
-
-                        await Task.WhenAll(tasks);
+                        }
                     }
                 }
 
-                return Ok(result);
+                if (newSalesReports.Count > 0)
+                {
+                    _dbContext.SalesReport.AddRange(newSalesReports);
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                return Ok(newSalesReports);
             }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Ocorreu um erro ao processar o arquivo: {ex.Message}");
             }
         }
-
 
         private async Task<SalesReport> ProcessRowAsync(ExcelWorksheet worksheet, int row, int userId)
         {
@@ -108,20 +131,26 @@ namespace LSF.Controllers
             var nameClient = worksheet.Cells[row, 20].Value?.ToString();
             var requisition = worksheet.Cells[row, 21].Value?.ToString();
             var cupomRequisition = worksheet.Cells[row, 22].Value?.ToString();
-            var codeAuthSender = worksheet.Cells[row, 23].Value.ToString();
+            var codeAuthSender = worksheet.Cells[row, 23].Value?.ToString();
             var error = worksheet.Cells[row, 24].Value?.ToString();
             var errorDetail = worksheet.Cells[row, 25].Value?.ToString();
 
+            // Verifica se o relatório já existe no banco de dados
+            var existingReport = await _dbContext.SalesReport.FirstOrDefaultAsync(report => report.SellDate == sellDate && report.UserId == userId);
+            if (existingReport != null)
+            {
+                return null; // Ignorar linhas duplicadas
+            }
+
             return new SalesReport()
             {
-                Id = 0,
                 UserId = userId,
                 Laundry = laundry,
                 SellDate = sellDate,
                 Interprise = interprise,
                 InterpriseDocument = interpriseDocument,
                 Equipment = equipment,
-                Situation = situation == "Sucesso" ? true : false,
+                Situation = situation == "Sucesso",
                 PaymentType = paymentType,
                 Value = value,
                 ValueWithNoDiscount = valueWithNoDiscount,
@@ -137,6 +166,7 @@ namespace LSF.Controllers
                 CPFClient = cPFClient,
                 NameClient = nameClient,
                 Requisition = requisition,
+                CupomRequisition = cupomRequisition,
                 CodeAuthSender = codeAuthSender,
                 Error = error,
                 ErrorDetail = errorDetail,

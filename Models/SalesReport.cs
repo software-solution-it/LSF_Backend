@@ -1,40 +1,84 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
-using System;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace LSF.Models
 {
     public class SalesReport
     {
+        [Key]
         public int? Id { get; set; }
-        [ForeignKey("User")]
-        public int? UserId { get; set; }
-        public virtual User? User { get; set; }
-        public string Laundry { get; set; }
-        public string? NameClient { get; set; }
-        public DateTime SellDate { get; set; }
-        public string Interprise { get; set; }
-        public string InterpriseDocument { get; set; }
-        public string Equipment { get; set; }
-        public bool Situation { get; set; }
-        public string PaymentType { get; set; }
-        public double Value { get; set; }
-        public double ValueWithNoDiscount { get; set; }
-        public string? Provider { get; set; }
-        public string? Acquirer { get; set; }
-        public string? CardFlag { get; set; }
-        public string? CardType { get; set; }
-        public string CardNumber { get; set; }
-        public string? Authorizer { get; set; }
-        public string? Voucher { get; set; }
-        public string? VoucherCategory { get; set; }
-        public string? Cupom { get; set; }
-        public string? CPFClient { get; set; }
-        public string Requisition { get; set; }
-        public string? CupomRequisition { get; set; }
-        public string? CodeAuthSender { get; set; }
-        public string? Error { get; set; }
-        public string? ErrorDetail { get; set; }
 
+        public int? UserId { get; set; }
+
+        [StringLength(255)]
+        public string? Laundry { get; set; }
+
+        public DateTime SellDate { get; set; }
+
+        [StringLength(255)]
+        public string? Interprise { get; set; }
+
+        [StringLength(20)]
+        public string? InterpriseDocument { get; set; }
+
+        [StringLength(255)]
+        public string? Equipment { get; set; }
+        public bool? Situation { get; set; }
+
+        [StringLength(50)]
+        public string? PaymentType { get; set; }
+
+        public double? Value { get; set; }
+
+
+        public double? ValueWithNoDiscount { get; set; }
+
+        [StringLength(255)]
+        public string? Provider { get; set; }
+
+        [StringLength(255)]
+        public string? Acquirer { get; set; }
+
+        [StringLength(50)]
+        public string? CardFlag { get; set; }
+
+        [StringLength(50)]
+        public string? CardType { get; set; }
+
+        [StringLength(50)]
+        public string? CardNumber { get; set; }
+
+        [StringLength(50)]
+        public string? Authorizer { get; set; }
+
+        [StringLength(50)]
+        public string? Voucher { get; set; }
+
+        [StringLength(50)]
+        public string? VoucherCategory { get; set; }
+
+        [StringLength(50)]
+        public string? Cupom { get; set; }
+
+        [StringLength(20)]
+        public string? CPFClient { get; set; }
+
+        [StringLength(255)]
+        public string? NameClient { get; set; }
+
+        [StringLength(50)]
+        public string? Requisition { get; set; }
+
+        [StringLength(50)]
+        public string? CupomRequisition { get; set; }
+
+        [StringLength(50)]
+        public string? CodeAuthSender { get; set; }
+
+        [StringLength(50)]
+        public string? Error { get; set; }
+
+        [StringLength(255)]
+        public string? ErrorDetail { get; set; }
     }
 }

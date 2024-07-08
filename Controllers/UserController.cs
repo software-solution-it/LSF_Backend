@@ -95,7 +95,6 @@ namespace LSF.Controllers
         {
             using (SHA256 sha256Hash = SHA256.Create())
             {
-                // Calcula o hash da senha
                 byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
 
                 StringBuilder builder = new StringBuilder();
@@ -204,7 +203,6 @@ namespace LSF.Controllers
                         u.Id,
                         u.Name,
                         u.Email,
-                        // outros campos do usuário que você queira incluir
                     })
                     .FirstOrDefaultAsync();
 
@@ -212,10 +210,7 @@ namespace LSF.Controllers
                 {
                     return NotFound("User not found.");
                 }
-
-
-                // Consulta para obter os projetos do usuário
-var projects = await (from p in _dbContext.Project
+            var projects = await (from p in _dbContext.Project
                       where p.userId == userId
                       select new
                       {

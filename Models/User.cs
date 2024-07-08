@@ -12,6 +12,8 @@ namespace LSF.Models
 
         public string? Phone { get; set; }
 
+        public string? ThreadId { get; set; }
+
         public bool? FirstAccess { get; set; }
 
         public string? Email { get; set; }

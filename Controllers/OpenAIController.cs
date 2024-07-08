@@ -18,12 +18,14 @@ namespace LSF.Controllers
     [Authorize]
     public class OpenAIController : ControllerBase
     {
-        private readonly string _apiKey = "sk-proj-vBQkEHSn1pkpXB2ULjCST3BlbkFJOy4l4E5w5sRAX7qBf8D5";
-        private readonly string _assistantId = "asst_UTKNJlAeXmHBQYsp4AWPHBi7";
+        private readonly string _apiKey;
+        private readonly string _assistantId;
         private readonly APIDbContext _dbContext;
 
         public OpenAIController(APIDbContext dbContext)
         {
+            _apiKey = Environment.GetEnvironmentVariable("API_KEY");
+            _assistantId = Environment.GetEnvironmentVariable("ASSISTANT_ID");
             _dbContext = dbContext;
         }
 
@@ -176,22 +178,20 @@ namespace LSF.Controllers
 
                 var assistMessage = lastAssistantMessage["content"]?[0]?["text"]?["value"]?.ToString();
                 assistMessage = assistMessage?.Replace("\n", ""); // Remove newline characters
-                 
+
                 var result = new JArray
-        {
-            new JObject
-            {
-                ["createdAt"] = DateTimeOffset.FromUnixTimeSeconds(lastAssistantMessage.Value<long>("created_at")).ToString("dd/MM/yyyy HH:mm:ss"),
-                ["assistMessage"] = assistMessage,
-                ["order"] = 0
-            }
-        };
+                {
+                    new JObject
+                    {
+                        ["createdAt"] = DateTimeOffset.FromUnixTimeSeconds(lastAssistantMessage.Value<long>("created_at")).ToString("dd/MM/yyyy HH:mm:ss"),
+                        ["assistMessage"] = assistMessage,
+                        ["order"] = 0
+                    }
+                };
 
                 return result;
             }
         }
-
-
 
         private async Task<int> GetUserIdFromSessionOrRequestAsync()
         {

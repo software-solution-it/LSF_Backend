@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using LSF.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 [ApiController]
@@ -13,19 +14,29 @@ public class PedidoController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<object> NumeroPedido([FromQuery] string numeroPedido)
+    public ActionResult<PedidoResponse> NumeroPedido([FromQuery] string numeroPedido)
     {
+        PedidoResponse response;
+
         if (numeroPedido.Contains("99"))
         {
-            var response = new { numeroPedido = (object)null, erro = "Numero Pedido é nulo" };
+            response = new PedidoResponse
+            {
+                NumeroPedido = null,
+                Erro = "Numero Pedido é nulo"
+            };
             _logger.LogInformation("NumeroPedido é nulo");
-            return Ok(response);
         }
         else
         {
-            var response = new { numeroPedido = numeroPedido, erro = (object)null };
+            response = new PedidoResponse
+            {
+                NumeroPedido = numeroPedido,
+                Erro = null
+            };
             _logger.LogInformation("NumeroPedido: {NumeroPedido}", numeroPedido);
-            return Ok(response);
         }
+
+        return Ok(response);
     }
 }

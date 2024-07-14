@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 [ApiController]
-[Route("[controller]")]
+[Route("pedido")]
 public class PedidoController : ControllerBase
 {
     private readonly ILogger<PedidoController> _logger;

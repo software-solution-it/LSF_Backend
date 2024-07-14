@@ -17,13 +17,13 @@ public class PedidoController : ControllerBase
     {
         if (numeroPedido.Contains("99"))
         {
-            var response = new { erro = "Numero Pedido é nullo" };
-            _logger.LogInformation("NumeroPedido é null");
+            var response = new { numeroPedido = (object)null, erro = "Numero Pedido é nulo" };
+            _logger.LogInformation("NumeroPedido é nulo");
             return Ok(response);
         }
         else
         {
-            var response = new { numeroPedido = numeroPedido };
+            var response = new { numeroPedido = numeroPedido, erro = (object)null };
             _logger.LogInformation("NumeroPedido: {NumeroPedido}", numeroPedido);
             return Ok(response);
         }

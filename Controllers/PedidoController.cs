@@ -12,8 +12,8 @@ public class PedidoController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet("{numeroPedido}")]
-    public ActionResult<object> NumeroPedido(string numeroPedido)
+    [HttpGet]
+    public ActionResult<object> NumeroPedido([FromQuery] string numeroPedido)
     {
         if (numeroPedido == null)
         {

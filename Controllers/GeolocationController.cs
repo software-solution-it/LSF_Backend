@@ -40,9 +40,17 @@ namespace LSF.Controllers
 
 
         [HttpGet("{numeroPedido}")]
-        public ActionResult<int> GetNumeroPedido(int numeroPedido)
+        public ActionResult<string> GetNumeroPedido(string numeroPedido)
         {
-            return numeroPedido;
+            if(numeroPedido == null)
+            {
+                return "Dado nulo"; ;
+            }
+            else
+            {
+                return numeroPedido;
+            }
+
         }
 
         [HttpPost]

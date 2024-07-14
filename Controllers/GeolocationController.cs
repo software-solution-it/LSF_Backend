@@ -37,22 +37,6 @@ namespace LSF.Controllers
 
             return geo;
         }
-
-
-        [HttpGet("{numeroPedido}")]
-        public ActionResult<string> GetNumeroPedido(string numeroPedido)
-        {
-            if(numeroPedido == null)
-            {
-                return "Dado nulo"; ;
-            }
-            else
-            {
-                return numeroPedido;
-            }
-
-        }
-
         [HttpPost]
         public async Task<IActionResult> PostGeolocalizacao(GeolocationModel geo, int projectId)
         {

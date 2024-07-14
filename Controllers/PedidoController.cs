@@ -18,19 +18,19 @@ namespace LSF.Controllers
             _dbContext = dbContext;
         }
 
-
         [HttpGet("{numeroPedido}")]
-        public ActionResult<string> NumeroPedido(string numeroPedido)
+        public ActionResult<object> NumeroPedido(string numeroPedido)
         {
             if (numeroPedido == null)
             {
-                return "Dado nulo"; ;
+                var response = new { numeroPedido = "Numero Pedido é nullo" };
+                return Ok(response);
             }
             else
             {
-                return numeroPedido;
+                var response = new { numeroPedido = numeroPedido };
+                return Ok(response);
             }
-
         }
 
     }

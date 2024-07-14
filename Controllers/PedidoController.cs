@@ -15,9 +15,9 @@ public class PedidoController : ControllerBase
     [HttpGet]
     public ActionResult<object> NumeroPedido([FromQuery] string numeroPedido)
     {
-        if (numeroPedido == null)
+        if (numeroPedido.Contains("99"))
         {
-            var response = new { numeroPedido = "Numero Pedido é nullo" };
+            var response = new { erro = "Numero Pedido é nullo" };
             _logger.LogInformation("NumeroPedido é null");
             return Ok(response);
         }

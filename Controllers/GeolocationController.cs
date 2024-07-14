@@ -37,6 +37,14 @@ namespace LSF.Controllers
 
             return geo;
         }
+
+
+        [HttpGet("{numeroPedido}")]
+        public ActionResult<int> GetNumeroPedido(int numeroPedido)
+        {
+            return numeroPedido;
+        }
+
         [HttpPost]
         public async Task<IActionResult> PostGeolocalizacao(GeolocationModel geo, int projectId)
         {

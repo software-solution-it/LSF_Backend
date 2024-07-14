@@ -1,37 +1,31 @@
-﻿using LSF.Data;
-using LSF.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Numerics;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
-namespace LSF.Controllers
+[ApiController]
+[Route("[controller]")]
+public class PedidoController : ControllerBase
 {
-    [Route("[controller]")]
-    [ApiController]
-    public class PedidoController : ControllerBase
+    private readonly ILogger<PedidoController> _logger;
+
+    public PedidoController(ILogger<PedidoController> logger)
     {
-        private readonly APIDbContext _dbContext;
+        _logger = logger;
+    }
 
-        public PedidoController(APIDbContext dbContext)
+    [HttpGet("{numeroPedido}")]
+    public ActionResult<object> NumeroPedido(string numeroPedido)
+    {
+        if (numeroPedido == null)
         {
-            _dbContext = dbContext;
+            var response = new { numeroPedido = "Numero Pedido é nullo" };
+            _logger.LogInformation("NumeroPedido é null");
+            return Ok(response);
         }
-
-        [HttpGet("{numeroPedido}")]
-        public ActionResult<object> NumeroPedido(string numeroPedido)
+        else
         {
-            if (numeroPedido == null)
-            {
-                var response = new { numeroPedido = "Numero Pedido é nullo" };
-                return Ok(response);
-            }
-            else
-            {
-                var response = new { numeroPedido = numeroPedido };
-                return Ok(response);
-            }
+            var response = new { numeroPedido = numeroPedido };
+            _logger.LogInformation("NumeroPedido: {NumeroPedido}", numeroPedido);
+            return Ok(response);
         }
-
     }
 }

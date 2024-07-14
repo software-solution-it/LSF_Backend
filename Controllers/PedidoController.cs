@@ -12,7 +12,7 @@ public class PedidoController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet]
+    [HttpPost]
     public ActionResult<object> NumeroPedido([FromQuery] string numeroPedido)
     {
         if (numeroPedido.Contains("99"))

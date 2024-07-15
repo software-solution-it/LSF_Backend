@@ -18,7 +18,7 @@ namespace LSF.Controllers
         [HttpGet("{numeroPedido}")]
         public ActionResult<PedidoResponse> NumeroPedido(string numeroPedido)
         {
-            if (string.IsNullOrEmpty(numeroPedido))
+            if (numeroPedido.Contains("555"))
             {
                 var response = new PedidoResponse
                 {

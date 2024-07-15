@@ -2,8 +2,8 @@
 {
     public class PedidoResponse
     {
-        public string? NumeroPedido { get; set; }
-        public string? Erro { get; set; }
+        public string? Pedido { get; set; }
+        public string? Status { get; set; }
     }
 
 }

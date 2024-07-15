@@ -1,42 +1,41 @@
-﻿using LSF.Models;
+﻿using LSF.Data;
+using LSF.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
-[ApiController]
-[Route("pedido")]
-public class PedidoController : ControllerBase
+namespace LSF.Controllers
 {
-    private readonly ILogger<PedidoController> _logger;
-
-    public PedidoController(ILogger<PedidoController> logger)
+    [Route("[controller]")]
+    [ApiController]
+    public class PedidoController : ControllerBase
     {
-        _logger = logger;
-    }
+        private readonly APIDbContext _dbContext;
 
-    [HttpPost]
-    public ActionResult<PedidoResponse> NumeroPedido([FromQuery] string numeroPedido)
-    {
-        PedidoResponse response;
-
-        if (numeroPedido.Contains("99"))
+        public PedidoController(APIDbContext dbContext)
         {
-            response = new PedidoResponse
-            {
-                NumeroPedido = null,
-                Erro = "Numero Pedido é nulo"
-            };
-            _logger.LogInformation("NumeroPedido é nulo");
-        }
-        else
-        {
-            response = new PedidoResponse
-            {
-                NumeroPedido = numeroPedido,
-                Erro = null
-            };
-            _logger.LogInformation("NumeroPedido: {NumeroPedido}", numeroPedido);
+            _dbContext = dbContext;
         }
 
-        return Ok(response);
+        [HttpGet("{numeroPedido}")]
+        public ActionResult<PedidoResponse> NumeroPedido(string numeroPedido)
+        {
+            if (string.IsNullOrEmpty(numeroPedido))
+            {
+                var response = new PedidoResponse
+                {
+                    Pedido = null,
+                    Status = "Numero Pedido é nullo"
+                };
+                return Ok(response);
+            }
+            else
+            {
+                var response = new PedidoResponse
+                {
+                    Pedido = numeroPedido,
+                    Status = null
+                };
+                return Ok(response);
+            }
+        }
     }
 }

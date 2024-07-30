@@ -1,5 +1,6 @@
 ﻿using Amazon.S3;
 using Amazon;
+using LSF.Service;
 using LSF.Data;
 using LSF.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -48,6 +49,8 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+
+
 
 var jwtIssuer = builder.Configuration.GetSection("Jwt:Issuer").Get<string>();
 var jwtKey = builder.Configuration.GetSection("Jwt:Key").Get<string>();

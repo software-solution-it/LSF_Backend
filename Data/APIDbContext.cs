@@ -58,6 +58,7 @@ namespace LSF.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<Mandala> Mandala { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<UserToken> User_Token { get; set; }
         public DbSet<SalesReport> SalesReport { get; set; }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Amazon.S3;
 using Amazon;
-using LSF.Service;
 using LSF.Data;
 using LSF.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

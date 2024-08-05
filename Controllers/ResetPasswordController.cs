@@ -76,7 +76,7 @@ namespace LSF.Controllers
                 
                 var token = HashKey(usuario.Email);
 
-                var urlConfirmacao = $" http://localhost:5173/confirmation?token={token}&Id={usuario.Id}";
+                var urlConfirmacao = $"https://web.faculdadedalavanderia.com.br/confirmation?token={token}&Id={usuario.Id}";
                 var mensagemBody = new StringBuilder();
                 mensagemBody.Append($"<p>Olá, {usuario.Name}.</p>");
                 mensagemBody.Append("<p>Houve uma solicitação de redefinição de senha para seu usuário em nosso site. Se não foi você que fez a solicitação, ignore essa mensagem. Caso tenha sido você, clique no link abaixo para criar sua nova senha:</p>");
@@ -116,7 +116,43 @@ namespace LSF.Controllers
               return new JsonResult(new { status = "error",message = $"Usuário/e-mail {email} não encontrado." });
             }
         }    
+        private async Task<bool> SendEmailAsync(string emailDestinatário, string emailSubject, string message)
+        {
+            string remetenteEmail = "suporte@faculdadedalavanderia.com.br";
+            string remetenteSenha = "Lsf#2024";
+            string destinatarioEmail = emailDestinatário;
+            string smtpServidor = "smtp.hostinger.com";
+            int porta = 587;
 
+            try
+            {
+                using (SmtpClient smtp = new SmtpClient(smtpServidor, porta))
+                {
+                    smtp.EnableSsl = true;
+                    smtp.UseDefaultCredentials = false;
+                    smtp.Credentials = new NetworkCredential(remetenteEmail, remetenteSenha);
+
+                    MailAddress remetente = new MailAddress(remetenteEmail, "LSF", Encoding.UTF8);
+
+                    using (MailMessage mensagem = new MailMessage(remetente, new MailAddress(destinatarioEmail)))
+                    {
+                        mensagem.Subject = emailSubject;
+                        mensagem.Body = message;
+                        mensagem.IsBodyHtml = true;
+                    
+ 
+                        await smtp.SendMailAsync(mensagem);
+                    }
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+        
         [HttpPost("Confirmation")]
         public async Task<IActionResult> ConfirmationToken(ConfirmationRequest confirmationRequest )
         {
@@ -210,42 +246,6 @@ namespace LSF.Controllers
             return Ok(tokenResponse);
             
 
-        }
-        private async Task<bool> SendEmailAsync(string emailDestinatário, string emailSubject, string message)
-        {
-            string remetenteEmail = "suporte@faculdadedalavanderia.com.br";
-            string remetenteSenha = "Lsf#2024";
-            string destinatarioEmail = emailDestinatário;
-            string smtpServidor = "smtp.hostinger.com";
-            int porta = 587;
-
-            try
-            {
-                using (SmtpClient smtp = new SmtpClient(smtpServidor, porta))
-                {
-                    smtp.EnableSsl = true;
-                    smtp.UseDefaultCredentials = false;
-                    smtp.Credentials = new NetworkCredential(remetenteEmail, remetenteSenha);
-
-                    MailAddress remetente = new MailAddress(remetenteEmail, "LSF", Encoding.UTF8);
-
-                    using (MailMessage mensagem = new MailMessage(remetente, new MailAddress(destinatarioEmail)))
-                    {
-                        mensagem.Subject = emailSubject;
-                        mensagem.Body = message;
-                        mensagem.IsBodyHtml = true;
-                    
- 
-                        await smtp.SendMailAsync(mensagem);
-                    }
-
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                return false;
-            }
         }
         private string HashKey(string key)
         {
